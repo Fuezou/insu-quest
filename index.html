@@ -2,33 +2,42 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>因数分解クエスト - 究極の100問</title>
+    <title>因数分解クエスト - 勇者の再起</title>
     <style>
         body { background-color: #1a1a2e; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; overflow: hidden; }
-        .card { background: #16213e; border: 2px solid #e94560; border-radius: 15px; padding: 25px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 90%; max-width: 450px; }
+        .card { background: #16213e; border: 2px solid #e94560; border-radius: 15px; padding: 25px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 90%; max-width: 450px; position: relative; }
         h1 { color: #e94560; margin-top: 0; font-size: 1.5rem; }
-        .monster { font-size: 5rem; margin: 15px 0; height: 100px; display: flex; justify-content: center; align-items: center; }
-        .question { font-size: 1.2rem; background: #0f3460; padding: 15px; border-radius: 10px; margin-bottom: 15px; min-height: 50px; display: flex; align-items: center; justify-content: center; color: #4ee44e; font-weight: bold; }
+        .monster { font-size: 5rem; margin: 10px 0; height: 100px; display: flex; justify-content: center; align-items: center; transition: 0.3s; }
+        .question { font-size: 1.3rem; background: #0f3460; padding: 15px; border-radius: 10px; margin-bottom: 15px; min-height: 50px; display: flex; align-items: center; justify-content: center; color: #4ee44e; font-weight: bold; }
         input { width: 80%; padding: 12px; border-radius: 8px; border: none; font-size: 1.1rem; margin-bottom: 10px; text-align: center; }
         button { background: #e94560; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; }
         #msg { height: 1.5rem; margin: 10px 0; font-weight: bold; }
-        .status { font-size: 0.9rem; color: #ccc; margin-bottom: 10px; display: flex; justify-content: space-between; }
-        .progress-bar { background: #0f3460; height: 10px; border-radius: 5px; margin-bottom: 15px; overflow: hidden; }
+        .status { font-size: 1rem; color: #ccc; margin-bottom: 10px; display: flex; justify-content: space-around; font-weight: bold; flex-wrap: wrap; }
+        .life { color: #ff4d4d; font-size: 1.2rem; width: 100%; margin-top: 5px; }
+        .progress-bar { background: #0f3460; height: 12px; border-radius: 6px; margin-bottom: 15px; overflow: hidden; border: 1px solid #333; }
         #progress { background: #4ee44e; height: 100%; width: 0%; transition: width 0.3s; }
+        #mission-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; flex-direction: column; justify-content: center; align-items: center; border-radius: 15px; z-index: 10; color: #ffd700; padding: 20px; box-sizing: border-box; }
     </style>
 </head>
 <body>
     <div class="card" id="game-card">
+        <div id="mission-overlay">
+            <h2 id="mission-title">STAGE 1</h2>
+            <p id="mission-text" style="font-size: 1.2rem;"></p>
+            <p style="font-size: 0.9rem; color: #ff4d4d;">※2回連続ミスで全ステージやり直し</p>
+            <button id="mission-btn" onclick="hideMission()" style="background:#ffd700; color:#000; margin-top:20px;">戦いに挑む</button>
+        </div>
+        
         <h1>⚔️ 因数分解クエスト</h1>
         <div class="status">
-            <span>LEVEL: <span id="lv">1</span> / 10</span>
-            <span>撃破数: <span id="count">0</span> / 10</span>
+            <span>STAGE: <span id="lv">1</span> / 4</span>
+            <span>討伐数: <span id="count">0</span> / <span id="target">3</span></span>
+            <div class="life" id="life-display">LIFE: ❤️❤️</div>
         </div>
         <div class="progress-bar"><div id="progress"></div></div>
         <div class="monster" id="mon">👾</div>
-        <div id="difficulty-label" style="font-size:0.8rem; color:#aaa; margin-bottom:5px;">難易度：★☆☆☆☆</div>
         <div class="question" id="q">ロード中...</div>
-        <input type="text" id="ans" placeholder="答えを入力 (例: (x+1)^3)">
+        <input type="text" id="ans" placeholder="答えを入力">
         <br>
         <button id="atk-btn" onclick="check()">魔法を放つ！</button>
         <div id="msg"></div>
@@ -36,67 +45,104 @@
     </div>
 
     <script>
-        // 難易度別に問題を整理しました
-        const problemSets = {
-            1: [{q:"x³+3x²+3x+1",a:"(x+1)^3"}, {q:"x³-3x²+3x-1",a:"(x-1)^3"}],
-            2: [{q:"x³+6x²+12x+8",a:"(x+2)^3"}, {q:"x³-6x²+12x-8",a:"(x-2)^3"}],
-            3: [{q:"x³+9x²+27x+27",a:"(x+3)^3"}, {q:"x³-9x²+27x-27",a:"(x-3)^3"}],
-            4: [{q:"8x³+12x²+6x+1",a:"(2x+1)^3"}, {q:"x³+8",a:"(x+2)(x^2-2x+4)"}],
-            5: [{q:"27x³+27x²+9x+1",a:"(3x+1)^3"}, {q:"x³-27",a:"(x-3)(x^2+3x+9)"}],
-            6: [{q:"8x³-12x²+6x-1",a:"(2x-1)^3"}, {q:"8x³+1",a:"(2x+1)(4x^2-2x+1)"}],
-            7: [{q:"a³+3a²b+3ab²+b³",a:"(a+b)^3"}, {q:"x³-64",a:"(x-4)(x^2+4x+16)"}],
-            8: [{q:"27x³-1",a:"(3x-1)(9x^2+3x+1)"}, {q:"x³+125",a:"(x+5)(x^2-5x+25)"}],
-            9: [{q:"8a³+b³",a:"(2a+b)(4a^2-2ab+b^2)"}, {q:"27a³-b³",a:"(3a-b)(9a^2+3ab+b^2)"}],
-            10:[{q:"8x³+36x²y+54xy²+27y³",a:"(2x+3y)^3"}, {q:"x³+y³",a:"(x+y)(x^2-xy+y^2)"}]
+        const levels = [
+            { target: 3, problems: [{q:"x³+3x²+3x+1",a:"(x+1)^3"}, {q:"x³-3x²+3x-1",a:"(x-1)^3"}, {q:"a³+3a²+3a+1",a:"(a+1)^3"}], monster: "👾" },
+            { target: 4, problems: [{q:"x³+6x²+12x+8",a:"(x+2)^3"}, {q:"x³+8",a:"(x+2)(x^2-2x+4)"}, {q:"x³-6x²+12x-8",a:"(x-2)^3"}, {q:"x³-8",a:"(x-2)(x^2+2x+4)"}], monster: "👹" },
+            { target: 5, problems: [{q:"27x³+27x²+9x+1",a:"(3x+1)^3"}, {q:"x³-27",a:"(x-3)(x^2+3x+9)"}, {q:"8x³+1",a:"(2x+1)(4x^2-2x+1)"}, {q:"27+x³",a:"(x+3)(x^2-3x+9)"}, {q:"x³+64",a:"(x+4)(x^2-4x+16)"}], monster: "🐉" },
+            { target: 5, problems: [{q:"8a³+b³",a:"(2a+b)(4a^2-2ab+b^2)"}, {q:"27a³-b³",a:"(3a-b)(9a^2+3ab+b^2)"}, {q:"8x³+36x²y+54xy²+27y³",a:"(2x+3y)^3"}, {q:"x³+y³",a:"(x+y)(x^2-xy+y^2)"}, {q:"a³+8b³",a:"(a+2b)(a^2-2ab+4b^2)"}], monster: "🔥" }
+        ];
+
+        let lvIndex = 0, count = 0, life = 2, cur;
+
+        const showMission = (isGameOver = false) => {
+            const overlay = document.getElementById('mission-overlay');
+            const title = document.getElementById('mission-title');
+            const text = document.getElementById('mission-text');
+            const btn = document.getElementById('mission-btn');
+
+            if (isGameOver) {
+                title.innerText = "GAME OVER";
+                title.style.color = "#ff4d4d";
+                text.innerText = "力尽きた…最初からやり直しだ！";
+                btn.innerText = "リベンジする";
+            } else {
+                title.innerText = `STAGE ${lvIndex + 1}`;
+                title.style.color = "#ffd700";
+                text.innerText = `${levels[lvIndex].target}体のモンスターを討伐せよ！`;
+                btn.innerText = "戦いに挑む";
+            }
+            overlay.style.display = 'flex';
         };
 
-        let lv = 1, count = 0, cur;
-        const monsters = ["👾", "👹", "💀", "🐉", "🧛", "🧙", "🐺", "🦂", "🤺", "🔥"];
+        const hideMission = () => {
+            if (life <= 0) { // ゲームオーバーからの復帰
+                lvIndex = 0; count = 0; life = 2;
+                init();
+            }
+            document.getElementById('mission-overlay').style.display = 'none';
+        };
 
         const init = () => {
-            if(lv > 10) return showEnding();
-            const pool = problemSets[lv];
+            if(lvIndex >= levels.length) return showEnding();
+            const pool = levels[lvIndex].problems;
             cur = pool[Math.floor(Math.random()*pool.length)];
             document.getElementById('q').innerText = cur.q;
             document.getElementById('ans').value = "";
             document.getElementById('msg').innerText = "";
-            document.getElementById('mon').innerText = monsters[lv-1];
+            document.getElementById('mon').innerText = levels[lvIndex].monster;
             document.getElementById('next').style.display = "none";
             document.getElementById('atk-btn').style.display = "inline-block";
-            document.getElementById('difficulty-label').innerText = "難易度：" + "★".repeat(Math.ceil(lv/2)) + "☆".repeat(5-Math.ceil(lv/2));
+            updateUI();
         };
 
         const check = () => {
-            const val = document.getElementById('ans').value.replace(/\s+/g, "");
-            if(val === cur.a) {
-                document.getElementById('msg').innerText = "✨ 会心の一撃！正解！ ✨";
-                document.getElementById('msg').style.color = "#4ee44e";
+            const val = document.getElementById('ans').value.replace(/\s+/g, "").replace(/\^3/g, "³");
+            const answer = cur.a.replace(/\^3/g, "³");
+            const msg = document.getElementById('msg');
+
+            if(val === answer || val === cur.a) {
+                msg.innerText = "✨ 討伐成功！";
+                msg.style.color = "#4ee44e";
                 count++;
-                if(count >= 10) { lv++; count = 0; }
-                updateUI();
+                life = 2; // 正解したらライフ回復（このへんは優しさ）
+                if(count >= levels[lvIndex].target) {
+                    lvIndex++; count = 0;
+                    if(lvIndex < levels.length) showMission();
+                }
                 document.getElementById('mon').innerText = "💥";
                 document.getElementById('atk-btn').style.display = "none";
                 document.getElementById('next').style.display = "inline-block";
             } else {
-                document.getElementById('msg').innerText = "ミス！公式を思い出そう。";
-                document.getElementById('msg').style.color = "#ff4d4d";
+                life--;
+                if (life <= 0) {
+                    showMission(true);
+                } else {
+                    msg.innerText = "ミス！あと1回間違えると最初からだ！";
+                    msg.style.color = "#ff4d4d";
+                    document.getElementById('mon').style.transform = "shake 0.5s";
+                }
             }
+            updateUI();
         };
 
         const updateUI = () => {
-            document.getElementById('lv').innerText = lv > 10 ? 10 : lv;
+            document.getElementById('lv').innerText = Math.min(lvIndex + 1, 4);
             document.getElementById('count').innerText = count;
-            document.getElementById('progress').style.width = (count * 10) + "%";
+            document.getElementById('target').innerText = levels[Math.min(lvIndex, 3)].target;
+            document.getElementById('progress').style.width = (count / levels[Math.min(lvIndex, 3)].target * 100) + "%";
+            document.getElementById('life-display').innerText = "LIFE: " + "❤️".repeat(life);
         };
 
         const showEnding = () => {
             document.getElementById('game-card').innerHTML = `
-                <h1 style="color:#FFD700">🎉 MISSION COMPLETE 🎉</h1>
+                <h1 style="color:#FFD700">👑 HAPPY ENDING 👑</h1>
                 <div style="font-size:6rem">👸✨</div>
-                <p style="font-size:1.2rem">お姫様を救い出しました！<br>あなたは因数分解のマスターです。</p>
-                <button onclick="location.reload()">もう一度冒険に出る</button>
+                <p style="font-size:1.2rem">勇者よ、お姫様を救ってくれてありがとう！<br>因数分解の平和は守られた。</p>
+                <button onclick="location.reload()" style="background:#ffd700; color:#000;">伝説を再び</button>
             `;
         };
+
+        showMission();
         init();
     </script>
 </body>
