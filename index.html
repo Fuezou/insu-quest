@@ -2,12 +2,12 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>因数分解クエスト - 勇者の再起</title>
+    <title>因数分解クエスト - 短期決戦</title>
     <style>
         body { background-color: #1a1a2e; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; overflow: hidden; }
         .card { background: #16213e; border: 2px solid #e94560; border-radius: 15px; padding: 25px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 90%; max-width: 450px; position: relative; }
         h1 { color: #e94560; margin-top: 0; font-size: 1.5rem; }
-        .monster { font-size: 5rem; margin: 10px 0; height: 100px; display: flex; justify-content: center; align-items: center; transition: 0.3s; }
+        .monster { font-size: 5rem; margin: 10px 0; height: 100px; display: flex; justify-content: center; align-items: center; }
         .question { font-size: 1.3rem; background: #0f3460; padding: 15px; border-radius: 10px; margin-bottom: 15px; min-height: 50px; display: flex; align-items: center; justify-content: center; color: #4ee44e; font-weight: bold; }
         input { width: 80%; padding: 12px; border-radius: 8px; border: none; font-size: 1.1rem; margin-bottom: 10px; text-align: center; }
         button { background: #e94560; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; }
@@ -24,13 +24,13 @@
         <div id="mission-overlay">
             <h2 id="mission-title">STAGE 1</h2>
             <p id="mission-text" style="font-size: 1.2rem;"></p>
-            <p style="font-size: 0.9rem; color: #ff4d4d;">※2回連続ミスで全ステージやり直し</p>
+            <p style="font-size: 0.9rem; color: #ff4d4d;">※2回ミスで全ステージやり直し</p>
             <button id="mission-btn" onclick="hideMission()" style="background:#ffd700; color:#000; margin-top:20px;">戦いに挑む</button>
         </div>
         
         <h1>⚔️ 因数分解クエスト</h1>
         <div class="status">
-            <span>STAGE: <span id="lv">1</span> / 4</span>
+            <span>LEVEL: <span id="lv">1</span> / 3</span>
             <span>討伐数: <span id="count">0</span> / <span id="target">3</span></span>
             <div class="life" id="life-display">LIFE: ❤️❤️</div>
         </div>
@@ -46,10 +46,9 @@
 
     <script>
         const levels = [
-            { target: 3, problems: [{q:"x³+3x²+3x+1",a:"(x+1)^3"}, {q:"x³-3x²+3x-1",a:"(x-1)^3"}, {q:"a³+3a²+3a+1",a:"(a+1)^3"}], monster: "👾" },
-            { target: 4, problems: [{q:"x³+6x²+12x+8",a:"(x+2)^3"}, {q:"x³+8",a:"(x+2)(x^2-2x+4)"}, {q:"x³-6x²+12x-8",a:"(x-2)^3"}, {q:"x³-8",a:"(x-2)(x^2+2x+4)"}], monster: "👹" },
-            { target: 5, problems: [{q:"27x³+27x²+9x+1",a:"(3x+1)^3"}, {q:"x³-27",a:"(x-3)(x^2+3x+9)"}, {q:"8x³+1",a:"(2x+1)(4x^2-2x+1)"}, {q:"27+x³",a:"(x+3)(x^2-3x+9)"}, {q:"x³+64",a:"(x+4)(x^2-4x+16)"}], monster: "🐉" },
-            { target: 5, problems: [{q:"8a³+b³",a:"(2a+b)(4a^2-2ab+b^2)"}, {q:"27a³-b³",a:"(3a-b)(9a^2+3ab+b^2)"}, {q:"8x³+36x²y+54xy²+27y³",a:"(2x+3y)^3"}, {q:"x³+y³",a:"(x+y)(x^2-xy+y^2)"}, {q:"a³+8b³",a:"(a+2b)(a^2-2ab+4b^2)"}], monster: "🔥" }
+            { target: 3, problems: [{q:"x³+3x²+3x+1",a:"(x+1)^3"}, {q:"x³-6x²+12x-8",a:"(x-2)^3"}, {q:"x³+8",a:"(x+2)(x^2-2x+4)"}], monster: "👾" },
+            { target: 4, problems: [{q:"27x³+27x²+9x+1",a:"(3x+1)^3"}, {q:"x³-27",a:"(x-3)(x^2+3x+9)"}, {q:"8+x³",a:"(x+2)(x^2-2x+4)"}, {q:"8x³-12x²+6x-1",a:"(2x-1)^3"}], monster: "👹" },
+            { target: 5, problems: [{q:"8a³+b³",a:"(2a+b)(4a^2-2ab+b^2)"}, {q:"27a³-b³",a:"(3a-b)(9a^2+3ab+b^2)"}, {q:"8x³+36x²y+54xy²+27y³",a:"(2x+3y)^3"}, {q:"x³+y³",a:"(x+y)(x^2-xy+y^2)"}, {q:"a³+8b³",a:"(a+2b)(a^2-2ab+4b^2)"}], monster: "🐉" }
         ];
 
         let lvIndex = 0, count = 0, life = 2, cur;
@@ -66,16 +65,16 @@
                 text.innerText = "力尽きた…最初からやり直しだ！";
                 btn.innerText = "リベンジする";
             } else {
-                title.innerText = `STAGE ${lvIndex + 1}`;
+                title.innerText = `LEVEL ${lvIndex + 1}`;
                 title.style.color = "#ffd700";
-                text.innerText = `${levels[lvIndex].target}体のモンスターを討伐せよ！`;
+                text.innerText = `${levels[lvIndex].target}体の魔物を討伐せよ！`;
                 btn.innerText = "戦いに挑む";
             }
             overlay.style.display = 'flex';
         };
 
         const hideMission = () => {
-            if (life <= 0) { // ゲームオーバーからの復帰
+            if (life <= 0) {
                 lvIndex = 0; count = 0; life = 2;
                 init();
             }
@@ -104,7 +103,7 @@
                 msg.innerText = "✨ 討伐成功！";
                 msg.style.color = "#4ee44e";
                 count++;
-                life = 2; // 正解したらライフ回復（このへんは優しさ）
+                life = 2;
                 if(count >= levels[lvIndex].target) {
                     lvIndex++; count = 0;
                     if(lvIndex < levels.length) showMission();
@@ -117,28 +116,27 @@
                 if (life <= 0) {
                     showMission(true);
                 } else {
-                    msg.innerText = "ミス！あと1回間違えると最初からだ！";
+                    msg.innerText = "ミス！あと1回ミスで最初からだ！";
                     msg.style.color = "#ff4d4d";
-                    document.getElementById('mon').style.transform = "shake 0.5s";
                 }
             }
             updateUI();
         };
 
         const updateUI = () => {
-            document.getElementById('lv').innerText = Math.min(lvIndex + 1, 4);
+            document.getElementById('lv').innerText = Math.min(lvIndex + 1, 3);
             document.getElementById('count').innerText = count;
-            document.getElementById('target').innerText = levels[Math.min(lvIndex, 3)].target;
-            document.getElementById('progress').style.width = (count / levels[Math.min(lvIndex, 3)].target * 100) + "%";
-            document.getElementById('life-display').innerText = "LIFE: " + "❤️".repeat(life);
+            document.getElementById('target').innerText = levels[Math.min(lvIndex, 2)].target;
+            document.getElementById('progress').style.width = (count / levels[Math.min(lvIndex, 2)].target * 100) + "%";
+            document.getElementById('life-display').innerText = "LIFE: " + "❤️".repeat(Math.max(0, life));
         };
 
         const showEnding = () => {
             document.getElementById('game-card').innerHTML = `
                 <h1 style="color:#FFD700">👑 HAPPY ENDING 👑</h1>
                 <div style="font-size:6rem">👸✨</div>
-                <p style="font-size:1.2rem">勇者よ、お姫様を救ってくれてありがとう！<br>因数分解の平和は守られた。</p>
-                <button onclick="location.reload()" style="background:#ffd700; color:#000;">伝説を再び</button>
+                <p style="font-size:1.2rem">お姫様を救い出しました！<br>あなたは因数分解の伝説の勇者です。</p>
+                <button onclick="location.reload()" style="background:#ffd700; color:#000;">再び冒険へ</button>
             `;
         };
 
