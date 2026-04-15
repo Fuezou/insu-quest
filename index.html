@@ -3,85 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>因数分解クエスト - 改良版</title>
+    <title>因数分解クエスト - パレット版</title>
     <style>
         body { background-color: #1a1a2e; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 10px; box-sizing: border-box; }
-        .card { background: #16213e; border: 3px solid #e94560; border-radius: 20px; padding: 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 100%; max-width: 500px; position: relative; }
-        h1 { color: #e94560; margin-top: 0; font-size: 1.8rem; letter-spacing: 2px; }
-        .monster { font-size: 6rem; margin: 10px 0; height: 120px; display: flex; justify-content: center; align-items: center; }
-        .question { font-size: 1.8rem; background: #0f3460; padding: 20px; border-radius: 12px; margin-bottom: 20px; min-height: 60px; display: flex; align-items: center; justify-content: center; color: #4ee44e; font-weight: bold; line-height: 1.2; word-break: break-all; }
-        input { width: 90%; padding: 15px; border-radius: 10px; border: 2px solid #4ee44e; font-size: 1.4rem; margin-bottom: 15px; text-align: center; background: #fff; color: #000; font-weight: bold; }
-        button { background: #e94560; color: white; border: none; padding: 18px 30px; border-radius: 12px; font-weight: bold; font-size: 1.3rem; cursor: pointer; width: 90%; margin-top: 5px; }
+        .card { background: #16213e; border: 3px solid #e94560; border-radius: 20px; padding: 15px; text-align: center; width: 100%; max-width: 450px; position: relative; }
+        
+        .question { font-size: 1.8rem; background: #0f3460; padding: 15px; border-radius: 12px; margin-bottom: 15px; color: #4ee44e; font-weight: bold; }
+        
+        /* 回答表示欄（入力不可にしてパレットからのみ受け付ける） */
+        #display-ans { width: 90%; padding: 12px; border-radius: 10px; border: 2px solid #4ee44e; font-size: 1.4rem; margin-bottom: 10px; text-align: center; background: #fff; color: #000; font-weight: bold; min-height: 1.5rem; display: inline-block; }
+        
+        /* パレット（入力ボタン）の設定 */
+        .palette { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 15px; }
+        .p-btn { background: #0f3460; color: white; border: 1px solid #4ee44e; padding: 12px 5px; border-radius: 8px; font-size: 1.2rem; font-weight: bold; cursor: pointer; }
+        .p-btn:active { background: #4ee44e; color: #000; }
+        .p-del { background: #555; border-color: #888; }
+        
+        button.main-btn { background: #e94560; color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; font-size: 1.2rem; cursor: pointer; width: 90%; margin-top: 5px; }
         #next { background: #4ee44e; color: #1a1a2e; display: none; }
-        #msg { height: 2.5rem; margin: 15px 0; font-weight: bold; font-size: 1.1rem; line-height: 1.2; }
-        .status { font-size: 1.1rem; color: #ccc; margin-bottom: 10px; display: flex; justify-content: space-around; font-weight: bold; }
-        .life { color: #ff4d4d; font-size: 1.4rem; width: 100%; margin-top: 5px; }
-        .progress-bar { background: #0f3460; height: 15px; border-radius: 10px; margin-bottom: 20px; overflow: hidden; border: 1px solid #333; }
-        #progress { background: #4ee44e; height: 100%; width: 0%; transition: width 0.3s; }
+        
+        .status { display: flex; justify-content: space-around; margin-bottom: 5px; font-weight: bold; color: #ccc; }
+        .life { color: #ff4d4d; font-size: 1.3rem; margin-bottom: 10px; }
+        #msg { height: 2rem; margin: 10px 0; font-weight: bold; font-size: 1rem; }
         #mission-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; flex-direction: column; justify-content: center; align-items: center; border-radius: 20px; z-index: 10; color: #ffd700; padding: 20px; box-sizing: border-box; }
     </style>
 </head>
 <body>
     <div class="card" id="game-card">
         <div id="mission-overlay">
-            <h2 id="mission-title" style="font-size:2.5rem;">LEVEL 1</h2>
-            <p id="mission-text" style="font-size: 1.5rem;"></p>
-            <button onclick="hideMission()" style="background:#ffd700; color:#000;">戦場へ！</button>
+            <h2 id="m-title" style="font-size:2rem;">LEVEL 1</h2>
+            <p id="m-text" style="font-size:1.2rem;"></p>
+            <button class="main-btn" onclick="hideMission()" style="background:#ffd700; color:#000;">挑戦する</button>
         </div>
         
-        <h1>⚔️ 因数分解クエスト</h1>
         <div class="status">
             <span>LV: <span id="lv">1</span> / 3</span>
             <span>撃破: <span id="count">0</span> / <span id="target">3</span></span>
         </div>
         <div class="life" id="life-display">❤️ ❤️</div>
-        <div class="progress-bar"><div id="progress"></div></div>
         
-        <div class="monster" id="mon">👾</div>
+        <div id="mon" style="font-size:4rem; margin-bottom:10px;">👾</div>
         <div class="question" id="q">...</div>
         
-        <input type="text" id="ans" placeholder="答えを入力">
-        <br>
-        <button id="atk-btn" onclick="check()">魔法を放つ！</button>
-        <button id="next" onclick="init()">次の敵を探す</button>
+        <div id="display-ans"></div>
+
+        <div class="palette">
+            <button class="p-btn" onclick="add('x')">x</button>
+            <button class="p-btn" onclick="add('a')">a</button>
+            <button class="p-btn" onclick="add('b')">b</button>
+            <button class="p-btn p-del" onclick="del()">Del</button>
+            
+            <button class="p-btn" onclick="add('(')">(</button>
+            <button class="p-btn" onclick="add(')')">)</button>
+            <button class="p-btn" onclick="add('+')">+</button>
+            <button class="p-btn" onclick="add('-')">-</button>
+            
+            <button class="p-btn" onclick="add('^2')">²</button>
+            <button class="p-btn" onclick="add('^3')">³</button>
+            <button class="p-btn" onclick="add('1')">1</button>
+            <button class="p-btn" onclick="add('2')">2</button>
+            
+            <button class="p-btn" onclick="add('3')">3</button>
+            <button class="p-btn" onclick="add('4')">4</button>
+            <button class="p-btn" onclick="add('5')">5</button>
+            <button class="p-btn" onclick="add('9')">9</button>
+        </div>
+
+        <button id="atk-btn" class="main-btn" onclick="check()">回答を放つ！</button>
+        <button id="next" class="main-btn" onclick="init()">次の敵へ</button>
         <div id="msg"></div>
     </div>
 
     <script>
         const allLevels = [
-            { target: 3, monster: "👾", problems: [
-                {q:"x³+3x²+3x+1",a:"(x+1)^3"}, {q:"x³-6x²+12x-8",a:"(x-2)^3"}, {q:"x³+8",a:"(x+2)(x^2-2x+4)"}, {q:"x³-1",a:"(x-1)(x^2+x+1)"}
-            ]},
-            { target: 4, monster: "👹", problems: [
-                {q:"27x³+27x²+9x+1",a:"(3x+1)^3"}, {q:"x³-27",a:"(x-3)(x^2+3x+9)"}, {q:"8+x³",a:"(x+2)(x^2-2x+4)"}, {q:"8x³-12x²+6x-1",a:"(2x-1)^3"}, {q:"64x³+1",a:"(4x+1)(16x^2-4x+1)"}
-            ]},
-            { target: 5, monster: "🐉", problems: [
-                {q:"8a³+b³",a:"(2a+b)(4a^2-2ab+b^2)"}, {q:"27a³-b³",a:"(3a-b)(9a^2+3ab+b^2)"}, {q:"8x³+36x²y+54xy²+27y³",a:"(2x+3y)^3"}, {q:"x³+y³",a:"(x+y)(x^2-xy+y^2)"}, {q:"a³+8b³",a:"(a+2b)(a^2-2ab+4b^2)"}, {q:"125x³-1",a:"(5x-1)(25x^2+5x+1)"}
-            ]}
+            { target: 3, monster: "👾", problems: [{q:"x³+3x²+3x+1",a:"(x+1)^3"}, {q:"x³-6x²+12x-8",a:"(x-2)^3"}, {q:"x³+8",a:"(x+2)(x^2-2x+4)"}] },
+            { target: 4, monster: "👹", problems: [{q:"27x³+27x²+9x+1",a:"(3x+1)^3"}, {q:"x³-27",a:"(x-3)(x^2+3x+9)"}, {q:"8+x³",a:"(x+2)(x^2-2x+4)"}, {q:"8x³-12x²+6x-1",a:"(2x-1)^3"}] },
+            { target: 5, monster: "🐉", problems: [{q:"8a³+b³",a:"(2a+b)(4a^2-2ab+b^2)"}, {q:"27a³-b³",a:"(3a-b)(9a^2+3ab+b^2)"}, {q:"8x³+36x²y+54xy²+27y³",a:"(2x+3y)^3"}, {q:"x³+y³",a:"(x+y)(x^2-xy+y^2)"}] }
         ];
 
-        let lvIdx = 0, count = 0, life = 2, cur;
-        let currentPool = []; // 現在のレベルの問題プール
+        let lvIdx = 0, count = 0, life = 2, cur, inputStr = "";
 
-        // フィッシャー・イェーツのシャッフル
-        const shuffle = (array) => {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array;
+        const add = (s) => { inputStr += s; updateInput(); };
+        const del = () => { 
+            if(inputStr.endsWith('^2') || inputStr.endsWith('^3')) inputStr = inputStr.slice(0, -2);
+            else inputStr = inputStr.slice(0, -1);
+            updateInput(); 
+        };
+        const updateInput = () => {
+            document.getElementById('display-ans').innerText = inputStr.replace(/\^2/g, "²").replace(/\^3/g, "³");
         };
 
         const showMission = (isGameOver = false) => {
             const overlay = document.getElementById('mission-overlay');
             if (isGameOver) {
-                document.getElementById('mission-title').innerText = "💀敗北";
-                document.getElementById('mission-text').innerText = "勇者の力が尽きた...";
+                document.getElementById('m-title').innerText = "💀GAME OVER";
+                document.getElementById('m-text').innerText = "修行をやり直そう";
             } else {
-                document.getElementById('mission-title').innerText = `LEVEL ${lvIdx + 1}`;
-                document.getElementById('mission-text').innerText = `${allLevels[lvIdx].target}体討伐せよ！`;
-                // レベル開始時に問題をシャッフルしてプールを作成
-                currentPool = shuffle([...allLevels[lvIdx].problems]);
+                document.getElementById('m-title').innerText = `LEVEL ${lvIdx + 1}`;
+                document.getElementById('m-text').innerText = `${allLevels[lvIdx].target}体討伐せよ！`;
             }
             overlay.style.display = 'flex';
         };
@@ -94,15 +113,10 @@
 
         const init = () => {
             if(lvIdx >= allLevels.length) return showEnding();
-            
-            // プールから1つ取り出す。空なら再補充（念のため）
-            if (currentPool.length === 0) {
-                currentPool = shuffle([...allLevels[lvIdx].problems]);
-            }
-            cur = currentPool.pop(); 
-
+            const pool = allLevels[lvIdx].problems;
+            cur = pool[Math.floor(Math.random()*pool.length)];
             document.getElementById('q').innerText = cur.q;
-            document.getElementById('ans').value = "";
+            inputStr = ""; updateInput();
             document.getElementById('msg').innerText = "";
             document.getElementById('mon').innerText = allLevels[lvIdx].monster;
             document.getElementById('next').style.display = "none";
@@ -111,15 +125,13 @@
         };
 
         const check = () => {
-            const val = document.getElementById('ans').value.replace(/\s+/g, "").replace(/\^3/g, "³");
-            const answer = cur.a.replace(/\^3/g, "³");
+            const val = inputStr.replace(/\^2/g, "²").replace(/\^3/g, "³");
+            const answer = cur.a.replace(/\^2/g, "²").replace(/\^3/g, "³");
             const msg = document.getElementById('msg');
 
-            if(val === answer || val === cur.a) {
-                msg.innerText = "✨ 討伐成功！ ✨";
-                msg.style.color = "#4ee44e";
+            if(val === answer) {
+                msg.innerText = "✨ 正解！ ✨"; msg.style.color = "#4ee44e";
                 count++;
-                life = 2; 
                 if(count >= allLevels[lvIdx].target) {
                     lvIdx++; count = 0;
                     setTimeout(showMission, 800);
@@ -130,30 +142,25 @@
                 }
             } else {
                 life--;
-                if (life <= 0) {
-                    showMission(true);
-                } else {
-                    msg.innerText = "ミス！あと1回ミスで\n最初からだ！";
-                    msg.style.color = "#ff4d4d";
-                }
+                if (life <= 0) showMission(true);
+                else { msg.innerText = "ミス！慎重に選ぼう"; msg.style.color = "#ff4d4d"; }
             }
             updateUI();
         };
 
         const updateUI = () => {
-            document.getElementById('lv').innerText = Math.min(lvIdx + 1, 3);
+            document.getElementById('lv').innerText = lvIdx + 1;
             document.getElementById('count').innerText = count;
             document.getElementById('target').innerText = allLevels[Math.min(lvIdx, 2)].target;
-            document.getElementById('progress').style.width = (count / allLevels[Math.min(lvIdx, 2)].target * 100) + "%";
             document.getElementById('life-display').innerText = "❤️".repeat(Math.max(0, life));
         };
 
         const showEnding = () => {
             document.getElementById('game-card').innerHTML = `
-                <h1 style="color:#FFD700; font-size:2.5rem;">👑 CLEAR!</h1>
-                <div style="font-size:8rem">👸✨</div>
-                <p style="font-size:1.5rem">伝説の勇者、誕生！</p>
-                <button onclick="location.reload()" style="background:#ffd700; color:#000;">もう一度冒険へ</button>
+                <h1 style="color:#FFD700">👑 CLEAR!</h1>
+                <div style="font-size:6rem">👸✨</div>
+                <p>完全制覇！おめでとう！</p>
+                <button class="main-btn" onclick="location.reload()" style="background:#ffd700; color:#000;">最初から</button>
             `;
         };
 
