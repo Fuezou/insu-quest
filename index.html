@@ -2,122 +2,101 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Insu-Quest Mobile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insu-Quest: RPG Mode</title>
     <style>
-        body { background: #000; color: #0f0; font-family: 'Courier New', monospace; text-align: center; overflow: hidden; margin: 0; position: fixed; width: 100%; height: 100%; }
-        canvas { background: #000; display: block; margin: 5px auto; border: 2px solid #0f0; max-width: 95%; height: auto; touch-action: none; }
-        #ui { padding: 5px; height: 80px; }
-        #question { font-size: 1.2rem; margin: 5px; color: #fff; }
-        .controls { display: flex; justify-content: center; gap: 15px; position: fixed; bottom: 30px; width: 100%; }
-        .btn { width: 65px; height: 65px; background: #333; border: 2px solid #0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #0f0; user-select: none; touch-action: manipulation; }
-        .btn:active { background: #0f0; color: #000; }
-        #fire-btn { width: 85px; height: 85px; background: #050; }
+        body { background: #1a1a1a; color: #fff; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; margin: 0; padding: 20px; text-align: center; }
+        #game-container { max-width: 500px; margin: 0 auto; background: #2c3e50; border: 4px solid #ecf0f1; border-radius: 10px; padding: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        #monster { font-size: 80px; margin: 20px 0; min-height: 100px; }
+        #question-box { background: #34495e; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 5px solid #e74c3c; }
+        #formula { font-size: 24px; font-weight: bold; }
+        .choices { display: grid; grid-template-columns: 1fr; gap: 10px; }
+        .choice-btn { background: #ecf0f1; border: none; padding: 15px; border-radius: 5px; font-size: 18px; font-weight: bold; color: #2c3e50; cursor: pointer; transition: transform 0.1s; -webkit-tap-highlight-color: transparent; }
+        .choice-btn:active { transform: scale(0.95); background: #bdc3c7; }
+        #status { margin-top: 20px; font-size: 16px; color: #f1c40f; }
+        .msg { height: 24px; margin-top: 10px; color: #2ecc71; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div id="ui">
-        <div id="question">Loading...</div>
-        <div style="font-size: 14px;">LEVEL: <span id="lv">1</span> | SCORE: <span id="score">0</span></div>
+
+<div id="game-container">
+    <div id="status">LV: <span id="lv">1</span> | 倒した数: <span id="score">0</span></div>
+    <div id="monster">👾</div>
+    <div id="question-box">
+        <div style="font-size: 14px; color: #bdc3c7;">この式を因数分解せよ！</div>
+        <div id="formula">読み込み中...</div>
     </div>
-    <canvas id="gameCanvas"></canvas>
+    <div class="choices" id="choices-area">
+        </div>
+    <div class="msg" id="message"></div>
+</div>
 
-    <div class="controls">
-        <div class="btn" id="left-btn">←</div>
-        <div class="btn" id="fire-btn">分解!</div>
-        <div class="btn" id="right-btn">→</div>
-    </div>
+<script>
+    let score = 0;
+    let lv = 1;
+    const monsters = ["👾", "👹", "👻", "🐉", "🧛", "👽", "🤖"];
 
-    <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = 400;
-        canvas.height = 450;
+    function generateQuestion() {
+        // x^2 + (a+b)x + ab の形
+        const a = Math.floor(Math.random() * 6) + 1;
+        const b = Math.floor(Math.random() * 6) + 1;
+        const sum = a + b;
+        const prod = a * b;
+        
+        const formula = `x² + ${sum}x + ${prod}`;
+        const correct = `(x + ${a})(x + ${b})`;
+        
+        // ダミーの選択肢を作成
+        const dummies = [
+            `(x + ${a+1})(x + ${b-1 === 0 ? 7 : b-1})`,
+            `(x - ${a})(x - ${b})`,
+            `(x + ${prod})(x + 1)`
+        ];
+        
+        const choices = [correct, ...dummies].sort(() => Math.random() - 0.5);
+        
+        return { formula, correct, choices };
+    }
 
-        let score = 0;
-        let lv = 1;
-        const player = { x: 180, y: 390, w: 40, h: 40, speed: 7 };
-        let bullets = [];
-        let enemies = [];
-        let currentQ = null;
-        const moveState = { left: false, right: false };
-
-        // ボタン制御
-        const setup = (id, act) => {
-            const b = document.getElementById(id);
-            b.addEventListener('touchstart', (e) => { e.preventDefault(); act(true); });
-            b.addEventListener('touchend', (e) => { e.preventDefault(); act(false); });
-        };
-        setup('left-btn', v => moveState.left = v);
-        setup('right-btn', v => moveState.right = v);
-        document.getElementById('fire-btn').addEventListener('touchstart', e => { e.preventDefault(); fire(); });
-
-        function fire() { if(bullets.length < 3) bullets.push({x: player.x+20, y: player.y, r:5}); }
-
-        function makeQ() {
-            // x^2 + (a+b)x + ab の形をランダム生成
-            const a = Math.floor(Math.random() * 5) + 1;
-            const b = Math.floor(Math.random() * 5) + 1;
-            const sum = a + b;
-            const prod = a * b;
-            return {
-                text: `x² + ${sum}x + ${prod}`,
-                ans: [a, b],
-                all: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    function updateGame() {
+        const q = generateQuestion();
+        document.getElementById('formula').innerText = q.formula;
+        document.getElementById('lv').innerText = lv;
+        document.getElementById('score').innerText = score;
+        document.getElementById('monster').innerText = monsters[score % monsters.length];
+        
+        const area = document.getElementById('choices-area');
+        area.innerHTML = '';
+        
+        q.choices.forEach(text => {
+            const btn = document.createElement('button');
+            btn.className = 'choice-btn';
+            btn.innerText = text;
+            btn.onclick = () => {
+                if (text === q.correct) {
+                    score++;
+                    if (score % 5 === 0) lv++;
+                    document.getElementById('message').innerText = "Excellent! 撃破！";
+                    setTimeout(() => {
+                        document.getElementById('message').innerText = "";
+                        updateGame();
+                    }, 600);
+                } else {
+                    document.getElementById('message').innerText = "Miss! 計算し直せ！";
+                    document.getElementById('message').style.color = "#e74c3c";
+                    setTimeout(() => {
+                        document.getElementById('message').style.color = "#2ecc71";
+                        document.getElementById('message').innerText = "";
+                    }, 1000);
+                }
             };
-        }
+            area.appendChild(btn);
+        });
+    }
 
-        function update() {
-            if(moveState.left && player.x > 0) player.x -= player.speed;
-            if(moveState.right && player.x < canvas.width-40) player.x += player.speed;
+    // 初回起動
+    updateGame();
+</script>
 
-            bullets.forEach((b, i) => {
-                b.y -= 7;
-                if(b.y < 0) bullets.splice(i, 1);
-            });
-
-            enemies.forEach((en, i) => {
-                en.y += 1.5;
-                bullets.forEach((b, bi) => {
-                    if(b.x > en.x && b.x < en.x+40 && b.y > en.y && b.y < en.y+40) {
-                        if(currentQ.ans.includes(en.val)) {
-                            score += 50;
-                            // 正解を1つ撃ったら次の問題へ（シンプル化）
-                            currentQ = makeQ();
-                            document.getElementById('question').innerText = currentQ.text;
-                        } else {
-                            score = Math.max(0, score - 20);
-                        }
-                        enemies.splice(i, 1);
-                        bullets.splice(bi, 1);
-                        document.getElementById('score').innerText = score;
-                    }
-                });
-                if(en.y > canvas.height) enemies.splice(i, 1);
-            });
-
-            if(Math.random() < 0.02) {
-                const val = Math.floor(Math.random() * 10) + 1;
-                enemies.push({x: Math.random()*360, y: -40, val});
-            }
-        }
-
-        function draw() {
-            ctx.clearRect(0,0,400,450);
-            ctx.fillStyle = '#0f0';
-            ctx.fillRect(player.x, player.y, 40, 40); // 自機
-            ctx.fillStyle = '#fff';
-            bullets.forEach(b => { ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, 7); ctx.fill(); });
-            enemies.forEach(en => {
-                ctx.strokeStyle = '#0f0'; ctx.strokeRect(en.x, en.y, 40, 40);
-                ctx.fillText(en.val, en.x+12, en.y+25);
-            });
-            requestAnimationFrame(() => { update(); draw(); });
-        }
-
-        currentQ = makeQ();
-        document.getElementById('question').innerText = currentQ.text;
-        draw();
-    </script>
 </body>
 </html>
