@@ -2,198 +2,122 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>因数分解クエスト - y対応版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Insu-Quest Mobile</title>
     <style>
-        body { background-color: #1a1a2e; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 10px; box-sizing: border-box; }
-        .card { background: #16213e; border: 3px solid #e94560; border-radius: 20px; padding: 15px; text-align: center; width: 100%; max-width: 450px; position: relative; min-height: 550px; display: flex; flex-direction: column; justify-content: space-between; }
-        
-        h1 { color: #e94560; margin-top: 0; font-size: 1.5rem; letter-spacing: 1px; }
-        .status { display: flex; justify-content: space-around; margin-bottom: 5px; font-weight: bold; color: #ccc; font-size: 0.9rem; }
-        .life { color: #ff4d4d; font-size: 1.3rem; margin-bottom: 5px; }
-        
-        .question { font-size: 1.7rem; background: #0f3460; padding: 15px; border-radius: 12px; margin-bottom: 10px; color: #4ee44e; font-weight: bold; min-height: 50px; display: flex; align-items: center; justify-content: center; }
-        
-        #display-ans { width: 90%; padding: 12px; border-radius: 10px; border: 2px solid #4ee44e; font-size: 1.4rem; margin-bottom: 10px; text-align: center; background: #fff; color: #000; font-weight: bold; min-height: 1.5rem; align-self: center; }
-        
-        /* パレット調整：5列にしてyをねじ込み */
-        .palette { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 10px; }
-        .p-btn { background: #0f3460; color: white; border: 1px solid #4ee44e; padding: 12px 2px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; }
-        .p-btn:active { background: #4ee44e; color: #000; }
-        .p-del { background: #555; border-color: #888; grid-column: span 1; }
-        
-        .main-btn { background: #e94560; color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; font-size: 1.2rem; cursor: pointer; width: 90%; align-self: center; }
-        #next { background: #4ee44e; color: #1a1a2e; display: none; }
-        
-        #msg { height: 1.5rem; margin: 5px 0; font-weight: bold; font-size: 0.9rem; }
-        #mission-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; flex-direction: column; justify-content: center; align-items: center; border-radius: 20px; z-index: 10; color: #ffd700; padding: 20px; box-sizing: border-box; }
+        body { background: #000; color: #0f0; font-family: 'Courier New', monospace; text-align: center; overflow: hidden; margin: 0; position: fixed; width: 100%; height: 100%; }
+        canvas { background: #000; display: block; margin: 5px auto; border: 2px solid #0f0; max-width: 95%; height: auto; touch-action: none; }
+        #ui { padding: 5px; height: 80px; }
+        #question { font-size: 1.2rem; margin: 5px; color: #fff; }
+        .controls { display: flex; justify-content: center; gap: 15px; position: fixed; bottom: 30px; width: 100%; }
+        .btn { width: 65px; height: 65px; background: #333; border: 2px solid #0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #0f0; user-select: none; touch-action: manipulation; }
+        .btn:active { background: #0f0; color: #000; }
+        #fire-btn { width: 85px; height: 85px; background: #050; }
     </style>
 </head>
 <body>
-    <div class="card" id="game-card">
-        <div id="mission-overlay">
-            <h2 id="m-title" style="font-size:2.5rem;">LEVEL 1</h2>
-            <p id="m-text" style="font-size: 1.5rem;"></p>
-            <button class="main-btn" onclick="hideMission()" style="background:#ffd700; color:#000;">挑戦する</button>
-        </div>
-        
-        <div>
-            <h1>⚔️ 因数分解クエスト</h1>
-            <div class="status">
-                <span>LV: <span id="lv">1</span> / 3</span>
-                <span>撃破: <span id="count">0</span> / <span id="target">3</span></span>
-            </div>
-            <div class="life" id="life-display">❤️ ❤️</div>
-        </div>
-        
-        <div id="mon" style="font-size:3.5rem;">👾</div>
-        <div class="question" id="q">...</div>
-        <div id="display-ans"></div>
+    <div id="ui">
+        <div id="question">Loading...</div>
+        <div style="font-size: 14px;">LEVEL: <span id="lv">1</span> | SCORE: <span id="score">0</span></div>
+    </div>
+    <canvas id="gameCanvas"></canvas>
 
-        <div class="palette">
-            <button class="p-btn" onclick="add('x')">x</button>
-            <button class="p-btn" onclick="add('y')">y</button>
-            <button class="p-btn" onclick="add('a')">a</button>
-            <button class="p-btn" onclick="add('b')">b</button>
-            <button class="p-btn p-del" onclick="del()">Del</button>
-            
-            <button class="p-btn" onclick="add('(')">(</button>
-            <button class="p-btn" onclick="add(')')">)</button>
-            <button class="p-btn" onclick="add('+')">+</button>
-            <button class="p-btn" onclick="add('-')">-</button>
-            <button class="p-btn" onclick="add('^2')">²</button>
-            
-            <button class="p-btn" onclick="add('^3')">³</button>
-            <button class="p-btn" onclick="add('1')">1</button>
-            <button class="p-btn" onclick="add('2')">2</button>
-            <button class="p-btn" onclick="add('3')">3</button>
-            <button class="p-btn" onclick="add('4')">4</button>
-            
-            <button class="p-btn" onclick="add('5')">5</button>
-            <button class="p-btn" onclick="add('6')">6</button>
-            <button class="p-btn" onclick="add('8')">8</button>
-            <button class="p-btn" onclick="add('9')">9</button>
-            <button class="p-btn" style="visibility:hidden"></button>
-        </div>
-
-        <div>
-            <button id="atk-btn" class="main-btn" onclick="check()">魔法を放つ！</button>
-            <button id="next" class="main-btn" onclick="init()">次の敵を探す</button>
-            <div id="msg"></div>
-        </div>
+    <div class="controls">
+        <div class="btn" id="left-btn">←</div>
+        <div class="btn" id="fire-btn">分解!</div>
+        <div class="btn" id="right-btn">→</div>
     </div>
 
     <script>
-        const allLevels = [
-            { target: 3, monster: "👾", probs: [
-                {q:"x³+3x²+3x+1",a:"(x+1)^3"}, {q:"x³-6x²+12x-8",a:"(x-2)^3"}, {q:"x³+8",a:"(x+2)(x^2-2x+4)"}, {q:"x³-1",a:"(x-1)(x^2+x+1)"}
-            ]},
-            { target: 4, monster: "👹", probs: [
-                {q:"27x³+27x²+9x+1",a:"(3x+1)^3"}, {q:"x³-27",a:"(x-3)(x^2+3x+9)"}, {q:"8+x³",a:"(x+2)(x^2-2x+4)"}, {q:"8x³-12x²+6x-1",a:"(2x-1)^3"}, {q:"64x³+1",a:"(4x+1)(16x^2-4x+1)"}
-            ]},
-            { target: 4, monster: "🐉", probs: [
-                {q:"8a³+b³",a:"(2a+b)(4a^2-2ab+b^2)"}, {q:"27a³-b³",a:"(3a-b)(9a^2+3ab+b^2)"}, {q:"8x³+36x²y+54xy²+27y³",a:"(2x+3y)^3"}, {q:"x³+y³",a:"(x+y)(x^2-xy+y^2)"}, {q:"a³+8b³",a:"(a+2b)(a^2-2ab+4b^2)"}
-            ]}
-        ];
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 400;
+        canvas.height = 450;
 
-        let lvIdx = 0, count = 0, life = 2, cur, inputStr = "";
-        let currentPool = [];
+        let score = 0;
+        let lv = 1;
+        const player = { x: 180, y: 390, w: 40, h: 40, speed: 7 };
+        let bullets = [];
+        let enemies = [];
+        let currentQ = null;
+        const moveState = { left: false, right: false };
 
-        const shuffle = (array) => {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
+        // ボタン制御
+        const setup = (id, act) => {
+            const b = document.getElementById(id);
+            b.addEventListener('touchstart', (e) => { e.preventDefault(); act(true); });
+            b.addEventListener('touchend', (e) => { e.preventDefault(); act(false); });
+        };
+        setup('left-btn', v => moveState.left = v);
+        setup('right-btn', v => moveState.right = v);
+        document.getElementById('fire-btn').addEventListener('touchstart', e => { e.preventDefault(); fire(); });
+
+        function fire() { if(bullets.length < 3) bullets.push({x: player.x+20, y: player.y, r:5}); }
+
+        function makeQ() {
+            // x^2 + (a+b)x + ab の形をランダム生成
+            const a = Math.floor(Math.random() * 5) + 1;
+            const b = Math.floor(Math.random() * 5) + 1;
+            const sum = a + b;
+            const prod = a * b;
+            return {
+                text: `x² + ${sum}x + ${prod}`,
+                ans: [a, b],
+                all: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+            };
+        }
+
+        function update() {
+            if(moveState.left && player.x > 0) player.x -= player.speed;
+            if(moveState.right && player.x < canvas.width-40) player.x += player.speed;
+
+            bullets.forEach((b, i) => {
+                b.y -= 7;
+                if(b.y < 0) bullets.splice(i, 1);
+            });
+
+            enemies.forEach((en, i) => {
+                en.y += 1.5;
+                bullets.forEach((b, bi) => {
+                    if(b.x > en.x && b.x < en.x+40 && b.y > en.y && b.y < en.y+40) {
+                        if(currentQ.ans.includes(en.val)) {
+                            score += 50;
+                            // 正解を1つ撃ったら次の問題へ（シンプル化）
+                            currentQ = makeQ();
+                            document.getElementById('question').innerText = currentQ.text;
+                        } else {
+                            score = Math.max(0, score - 20);
+                        }
+                        enemies.splice(i, 1);
+                        bullets.splice(bi, 1);
+                        document.getElementById('score').innerText = score;
+                    }
+                });
+                if(en.y > canvas.height) enemies.splice(i, 1);
+            });
+
+            if(Math.random() < 0.02) {
+                const val = Math.floor(Math.random() * 10) + 1;
+                enemies.push({x: Math.random()*360, y: -40, val});
             }
-            return array;
-        };
+        }
 
-        const add = (s) => { inputStr += s; updateInput(); };
-        const del = () => { 
-            if(inputStr.endsWith('^2') || inputStr.endsWith('^3')) inputStr = inputStr.slice(0, -2);
-            else inputStr = inputStr.slice(0, -1);
-            updateInput(); 
-        };
-        const updateInput = () => {
-            document.getElementById('display-ans').innerText = inputStr.replace(/\^2/g, "²").replace(/\^3/g, "³");
-        };
+        function draw() {
+            ctx.clearRect(0,0,400,450);
+            ctx.fillStyle = '#0f0';
+            ctx.fillRect(player.x, player.y, 40, 40); // 自機
+            ctx.fillStyle = '#fff';
+            bullets.forEach(b => { ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, 7); ctx.fill(); });
+            enemies.forEach(en => {
+                ctx.strokeStyle = '#0f0'; ctx.strokeRect(en.x, en.y, 40, 40);
+                ctx.fillText(en.val, en.x+12, en.y+25);
+            });
+            requestAnimationFrame(() => { update(); draw(); });
+        }
 
-        const showMission = (isGameOver = false) => {
-            if (lvIdx >= allLevels.length) return showEnding();
-            const overlay = document.getElementById('mission-overlay');
-            if (isGameOver) {
-                document.getElementById('m-title').innerText = "💀敗北";
-                document.getElementById('m-text').innerText = "勇者の力が尽きた...";
-            } else {
-                document.getElementById('m-title').innerText = `LEVEL ${lvIdx + 1}`;
-                document.getElementById('m-text').innerText = `${allLevels[lvIdx].target}体討伐せよ！`;
-                currentPool = shuffle([...allLevels[lvIdx].problems]);
-            }
-            overlay.style.display = 'flex';
-        };
-
-        const hideMission = () => {
-            if (life <= 0) { lvIdx = 0; count = 0; life = 2; }
-            document.getElementById('mission-overlay').style.display = 'none';
-            init();
-        };
-
-        const init = () => {
-            if(lvIdx >= allLevels.length) return showEnding();
-            if (currentPool.length === 0) currentPool = shuffle([...allLevels[lvIdx].problems]);
-            cur = currentPool.pop(); 
-
-            document.getElementById('q').innerText = cur.q;
-            inputStr = ""; updateInput();
-            document.getElementById('msg').innerText = "";
-            document.getElementById('mon').innerText = allLevels[lvIdx].monster;
-            document.getElementById('next').style.display = "none";
-            document.getElementById('atk-btn').style.display = "block";
-            updateUI();
-        };
-
-        const check = () => {
-            const val = inputStr.replace(/\^2/g, "²").replace(/\^3/g, "³");
-            const answer = cur.a.replace(/\^2/g, "²").replace(/\^3/g, "³");
-            const msg = document.getElementById('msg');
-
-            if(val === answer) {
-                msg.innerText = "✨ 討伐成功！ ✨"; msg.style.color = "#4ee44e";
-                count++;
-                if(count >= allLevels[lvIdx].target) {
-                    lvIdx++; count = 0;
-                    setTimeout(showMission, 800);
-                } else {
-                    document.getElementById('mon').innerText = "💥";
-                    document.getElementById('atk-btn').style.display = "none";
-                    document.getElementById('next').style.display = "block";
-                }
-            } else {
-                life--;
-                if (life <= 0) showMission(true);
-                else { msg.innerText = "ミス！慎重に選ぼう"; msg.style.color = "#ff4d4d"; }
-            }
-            updateUI();
-        };
-
-        const updateUI = () => {
-            document.getElementById('lv').innerText = Math.min(lvIdx + 1, 3);
-            document.getElementById('count').innerText = count;
-            document.getElementById('target').innerText = allLevels[Math.min(lvIdx, 2)].target;
-            document.getElementById('life-display').innerText = "❤️".repeat(Math.max(0, life));
-        };
-
-        const showEnding = () => {
-            document.getElementById('game-card').innerHTML = `
-                <div style="margin: auto;">
-                    <h1 style="color:#FFD700; font-size:2.5rem;">👑 CLEAR!</h1>
-                    <div style="font-size:7rem; margin: 20px 0;">👸✨</div>
-                    <p style="font-size:1.3rem; font-weight:bold;">伝説の勇者、誕生！</p>
-                    <button class="main-btn" onclick="location.reload()" style="background:#ffd700; color:#000; margin-top:20px;">最初から</button>
-                </div>
-            `;
-        };
-
-        showMission();
+        currentQ = makeQ();
+        document.getElementById('question').innerText = currentQ.text;
+        draw();
     </script>
 </body>
 </html>
