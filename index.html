@@ -1,102 +1,1169 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Insu-Quest III (Math II)</title>
-    <style>
-        :root { --main-color: #00ffcc; --bg-dark: #121212; }
-        body { background: var(--bg-dark); color: var(--main-color); font-family: 'Consolas', monospace; margin: 0; padding: 10px; text-align: center; }
-        #container { max-width: 450px; margin: 0 auto; border: 2px solid var(--main-color); border-radius: 10px; padding: 20px; }
-        #monster { font-size: 70px; margin: 20px 0; }
-        #problem { font-size: 24px; margin: 20px 0; min-height: 40px; color: #fff; }
-        #input-area { margin-top: 20px; }
-        input[type="text"] { width: 85%; padding: 15px; font-size: 18px; background: #222; border: 1px solid var(--main-color); color: #fff; border-radius: 5px; text-align: center; margin-bottom: 10px; }
-        .hint { font-size: 12px; color: #888; margin-bottom: 15px; }
-        #ans-btn { background: var(--main-color); color: #000; border: none; padding: 12px 30px; font-size: 18px; font-weight: bold; border-radius: 5px; cursor: pointer; width: 100%; }
-        #msg { height: 30px; margin-top: 15px; font-weight: bold; }
-        .keyboard-helper { display: flex; justify-content: center; gap: 5px; margin-bottom: 10px; flex-wrap: wrap; }
-        .key { background: #333; padding: 8px 12px; border-radius: 3px; font-size: 14px; cursor: pointer; border: 1px solid #555; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>因数分解クエスト ～数学Ⅱの章～</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.2/math.js"></script>
+<style>
+  /* ===================== ドラクエ風レトロCSS ===================== */
+  @font-face {
+    font-family: 'DQFont';
+    src: local('ＭＳ ゴシック'), local('MS Gothic'), local('Osaka-Mono');
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; }
+  html, body {
+    height: 100%;
+    background: #000;
+    font-family: 'Courier New', 'DQFont', 'ＭＳ ゴシック', monospace;
+    color: #fff;
+    overflow: hidden;
+    image-rendering: pixelated;
+  }
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-feature-settings: "palt";
+  }
+  #game {
+    width: 100%;
+    max-width: 480px;
+    height: 100vh;
+    max-height: 900px;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    border: 2px solid #333;
+  }
+
+  /* --- ドラクエ風ウィンドウ（黒背景＋白二重枠） --- */
+  .dq-window {
+    background: #000;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 3px #000, 0 0 0 5px #fff;
+    padding: 10px;
+    margin: 6px;
+    position: relative;
+  }
+
+  /* --- 上部：ステータスウィンドウ --- */
+  #status {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    padding: 8px 12px;
+    font-size: 13px;
+    line-height: 1.8;
+  }
+  #status .row { display: flex; justify-content: space-between; }
+  #status .label { color: #ffff00; letter-spacing: 1px; }
+  #status .value { color: #fff; letter-spacing: 1px; }
+  .hearts { letter-spacing: 2px; color: #ff4444; }
+  .hearts .empty { color: #444; }
+
+  /* --- 中央：バトルフィールド --- */
+  #field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    min-height: 170px;
+    overflow: hidden;
+    background: linear-gradient(180deg, #001428 0%, #002952 60%, #000 100%);
+  }
+  #field::before {
+    /* 星のドット（背景演出） */
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 20% 30%, #fff 1px, transparent 0),
+      radial-gradient(1px 1px at 70% 20%, #fff 1px, transparent 0),
+      radial-gradient(1px 1px at 40% 70%, #fff 1px, transparent 0),
+      radial-gradient(1px 1px at 85% 55%, #fff 1px, transparent 0),
+      radial-gradient(1px 1px at 15% 85%, #fff 1px, transparent 0),
+      radial-gradient(1px 1px at 55% 40%, #aaa 1px, transparent 0),
+      radial-gradient(1px 1px at 90% 90%, #aaa 1px, transparent 0);
+    pointer-events: none;
+  }
+  #monster {
+    font-size: 84px;
+    line-height: 1;
+    filter: contrast(1.1) saturate(1.2);
+    transition: transform 0.15s, opacity 0.3s;
+    position: relative;
+    z-index: 2;
+    text-shadow: 0 0 8px rgba(255,255,255,0.3);
+  }
+  #monster.boss { font-size: 108px; animation: bossFloat 2s ease-in-out infinite; text-shadow: 0 0 16px rgba(255,0,0,0.6); }
+  @keyframes bossFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  #monster.hit { animation: hit 0.3s; }
+  @keyframes hit {
+    0%, 100% { transform: translateX(0); filter: brightness(1); }
+    20% { transform: translateX(-10px); filter: brightness(3) hue-rotate(180deg); }
+    40% { transform: translateX(10px); filter: brightness(3) hue-rotate(180deg); }
+    60% { transform: translateX(-6px); filter: brightness(3); }
+    80% { transform: translateX(6px); }
+  }
+  #monster.dying { animation: die 0.8s forwards; }
+  @keyframes die {
+    0% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.1); filter: brightness(3); }
+    100% { opacity: 0; transform: scale(0.3) rotate(180deg); }
+  }
+  #monster.miss-dmg { animation: miss 0.4s; }
+  @keyframes miss {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(0) scale(1.08); filter: brightness(1.3) sepia(0.3); }
+  }
+  #monsterName {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px;
+    color: #ffff00;
+    letter-spacing: 2px;
+    z-index: 3;
+    text-shadow: 2px 2px 0 #000;
+  }
+
+  /* --- 問題ウィンドウ --- */
+  #problemBox {
+    padding: 14px;
+    font-size: 15px;
+    text-align: center;
+    line-height: 1.8;
+    min-height: 88px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  #problemBox .label { color: #ffff00; font-size: 12px; margin-bottom: 8px; letter-spacing: 2px; }
+  #problemBox .expr {
+    color: #fff;
+    font-size: 19px;
+    font-family: 'Cambria Math', 'Times New Roman', serif;
+    font-style: italic;
+    letter-spacing: 1px;
+  }
+
+  /* --- 入力表示欄 --- */
+  #inputBox {
+    padding: 10px 12px;
+    min-height: 48px;
+    font-size: 18px;
+    text-align: center;
+    color: #00ff00;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 2px;
+    word-break: break-all;
+    cursor: text;
+  }
+  #inputBox .cursor {
+    color: #ffff00;
+    animation: blink 0.8s steps(2) infinite;
+    font-style: normal;
+  }
+  #inputBox.error {
+    color: #ff4444;
+    text-shadow: 0 0 8px rgba(255,0,0,0.4);
+  }
+  #inputBox.error .cursor { display: none; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* --- キーパッド --- */
+  #keypad {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+    padding: 6px;
+  }
+  .key {
+    background: #000;
+    border: 2px solid #fff;
+    color: #fff;
+    font-family: 'Courier New', monospace;
+    font-size: 18px;
+    font-weight: bold;
+    padding: 10px 0;
+    cursor: pointer;
+    transition: all 0.05s;
+    text-align: center;
+    line-height: 1;
+    min-height: 42px;
+    touch-action: manipulation;
+  }
+  .key:active, .key.pressed {
+    background: #fff;
+    color: #000;
+    transform: translateY(1px);
+  }
+  .key.var { color: #ffff00; font-style: italic; font-family: 'Cambria Math', serif; }
+  .key.op { color: #ff8888; }
+  .key.action { background: #333; color: #aaa; }
+  .key.submit { background: #004488; color: #ffff00; font-size: 15px; }
+  .key.submit:active { background: #0066cc; }
+  .key.clear { background: #440000; color: #ff8888; font-size: 15px; }
+  .key.clear:active { background: #880000; }
+
+  /* --- メッセージウィンドウ（下部） --- */
+  #message {
+    min-height: 58px;
+    font-size: 14px;
+    line-height: 1.6;
+    letter-spacing: 1px;
+    white-space: pre-wrap;
+  }
+  #message .arrow {
+    position: absolute;
+    bottom: 8px;
+    right: 12px;
+    color: #fff;
+    animation: blink 0.8s steps(2) infinite;
+    font-size: 14px;
+  }
+
+  /* --- オーバーレイ画面（タイトル・エンディング等） --- */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 100;
+    text-align: center;
+  }
+  .overlay.hidden { display: none; }
+  .overlay h1 {
+    font-size: 28px;
+    color: #ffff00;
+    letter-spacing: 3px;
+    margin-bottom: 20px;
+    text-shadow: 3px 3px 0 #884400;
+    line-height: 1.4;
+  }
+  .overlay h2 {
+    font-size: 20px;
+    color: #fff;
+    margin-bottom: 16px;
+    letter-spacing: 2px;
+  }
+  .overlay p {
+    font-size: 14px;
+    color: #fff;
+    line-height: 2;
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+  }
+  .overlay .sub { color: #aaa; font-size: 12px; }
+  .overlay .start-btn {
+    background: #000;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 3px #000, 0 0 0 5px #fff;
+    color: #ffff00;
+    padding: 14px 28px;
+    font-size: 16px;
+    letter-spacing: 3px;
+    cursor: pointer;
+    margin-top: 20px;
+    font-family: inherit;
+  }
+  .overlay .start-btn:active { background: #fff; color: #000; }
+  .overlay .hero {
+    font-size: 64px;
+    margin-bottom: 12px;
+  }
+
+  /* --- ダメージエフェクト --- */
+  .dmg-float {
+    position: absolute;
+    font-size: 28px;
+    font-weight: bold;
+    color: #ff4444;
+    text-shadow: 2px 2px 0 #000, 0 0 8px #ff0000;
+    pointer-events: none;
+    animation: dmgFloat 1s forwards;
+    z-index: 10;
+  }
+  @keyframes dmgFloat {
+    0% { opacity: 1; transform: translateY(0) scale(0.6); }
+    30% { transform: translateY(-20px) scale(1.2); }
+    100% { opacity: 0; transform: translateY(-60px) scale(1); }
+  }
+
+  /* --- 画面フラッシュ --- */
+  #flash {
+    position: absolute;
+    inset: 0;
+    background: #fff;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 50;
+  }
+  #flash.on { animation: flash 0.2s; }
+  @keyframes flash {
+    0% { opacity: 0; }
+    50% { opacity: 0.8; }
+    100% { opacity: 0; }
+  }
+
+  /* --- レベルアップ演出 --- */
+  .level-up {
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 32px;
+    color: #ffff00;
+    text-shadow: 3px 3px 0 #884400, 0 0 16px #ffff00;
+    letter-spacing: 4px;
+    z-index: 20;
+    animation: lvUp 1.8s forwards;
+    pointer-events: none;
+  }
+  @keyframes lvUp {
+    0% { opacity: 0; transform: translate(-50%, -30%) scale(0.5); }
+    20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+    80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -80%) scale(1); }
+  }
+
+  /* --- エンディング --- */
+  .ending-scroll {
+    max-width: 90%;
+    line-height: 2.2;
+  }
+
+  /* 画面狭い時 */
+  @media (max-height: 700px) {
+    .key { font-size: 16px; padding: 8px 0; min-height: 38px; }
+    #status { font-size: 12px; padding: 6px 10px; }
+    #problemBox { font-size: 14px; padding: 10px; min-height: 60px; }
+    #problemBox .expr { font-size: 17px; }
+    #monster { font-size: 68px; }
+    #monster.boss { font-size: 90px; }
+  }
+</style>
 </head>
 <body>
+<div id="game">
 
-<div id="container">
-    <div style="display:flex; justify-content:space-between; font-size:14px;">
-        <span>RANK: Math II</span>
-        <span>SCORE: <span id="score">0</span></span>
-    </div>
-    <div id="monster">🐉</div>
-    <div id="problem">Loading...</div>
-    
-    <div class="hint">入力例: (x+y)(x^2-xy+y^2)</div>
-    
-    <div class="keyboard-helper">
-        <span class="key" onclick="add('^2')">^2</span>
-        <span class="key" onclick="add('^3')">^3</span>
-        <span class="key" onclick="add('(')">(</span>
-        <span class="key" onclick="add(')')">)</span>
-        <span class="key" onclick="add('x')">x</span>
-        <span class="key" onclick="add('y')">y</span>
-        <span class="key" onclick="add('+')">+</span>
-        <span class="key" onclick="add('-')">-</span>
-    </div>
+  <!-- タイトル画面 -->
+  <div class="overlay" id="titleScreen">
+    <div class="hero">🗡️</div>
+    <h1>因数分解<br>クエスト</h1>
+    <p class="sub">～数学Ⅱの章～</p>
+    <p style="margin-top:30px;">3乗の公式を駆使し<br>モンスターを打ち倒せ！</p>
+    <button class="start-btn" id="startBtn">▶ はじめる</button>
+    <p class="sub" style="margin-top:24px;font-size:10px;">
+      LV1(2戦) → LV2(3戦) → LV3(4戦) → BOSS
+    </p>
+  </div>
 
-    <input type="text" id="user-input" autocomplete="off" placeholder="解答を入力...">
-    <button id="ans-btn" onclick="check()">CAST SPELL</button>
-    <div id="msg"></div>
+  <!-- エンディング画面 -->
+  <div class="overlay hidden" id="endingScreen">
+    <div class="hero">👑</div>
+    <h1>GAME CLEAR!</h1>
+    <div class="ending-scroll">
+      <p>勇者よ、よくぞ魔王を倒した。</p>
+      <p>3乗の公式を極めし者よ<br>その知恵に栄光あれ。</p>
+      <p class="sub">～ FIN ～</p>
+    </div>
+    <button class="start-btn" id="restartBtn">▶ もう一度</button>
+  </div>
+
+  <!-- ゲームオーバー画面 -->
+  <div class="overlay hidden" id="gameOverScreen">
+    <div class="hero">💀</div>
+    <h1 style="color:#ff4444;text-shadow:3px 3px 0 #440000;">ぜんめつ…</h1>
+    <p>勇者は倒れてしまった…</p>
+    <p class="sub">また挑戦しよう</p>
+    <button class="start-btn" id="retryBtn">▶ やりなおす</button>
+  </div>
+
+  <!-- ステータス -->
+  <div class="dq-window" id="status">
+    <div class="row"><span class="label">ゆうしゃ</span><span class="value" id="levelDisplay">LV 1</span></div>
+    <div class="row"><span class="label">ライフ</span><span class="value hearts" id="livesDisplay">♥♥</span></div>
+    <div class="row"><span class="label">げきは</span><span class="value" id="progressDisplay">0/3</span></div>
+    <div class="row"><span class="label">てき</span><span class="value" id="enemyHpDisplay">HP 1</span></div>
+  </div>
+
+  <!-- バトル場 -->
+  <div id="field">
+    <div id="monsterName">スライム</div>
+    <div id="monster">🟢</div>
+    <div id="flash"></div>
+  </div>
+
+  <!-- 問題 -->
+  <div class="dq-window" id="problemBox">
+    <div class="label">▼ いんすうぶんかい せよ</div>
+    <div class="expr" id="problemExpr">x³ + 3x² + 3x + 1</div>
+  </div>
+
+  <!-- 入力欄 -->
+  <div class="dq-window" id="inputBox" class="empty"></div>
+
+  <!-- キーパッド -->
+  <div id="keypad"></div>
+
+  <!-- メッセージ -->
+  <div class="dq-window" id="message" style="position:relative;">
+    モンスターが　あらわれた！
+    <span class="arrow" id="msgArrow" style="display:none;">▼</span>
+  </div>
 </div>
 
 <script>
-    let score = 0;
-    let currentQ = null;
+// ========== 問題生成 ==========
+// 2パターン: (a±b)^3 展開形 / a^3±b^3
+// 文字は最大2種類、係数も入る
 
-    const problems = [
-        { q: "x³ + y³", a: "(x+y)(x^2-xy+y^2)" },
-        { q: "x³ - y³", a: "(x-y)(x^2+xy+y^2)" },
-        { q: "x³ + 8", a: "(x+2)(x^2-2x+4)" },
-        { q: "x³ - 27", a: "(x-3)(x^2+3x+9)" },
-        { q: "8x³ + 1", a: "(2x+1)(4x^2-2x+1)" },
-        { q: "x³ + 3x²y + 3xy² + y³", a: "(x+y)^3" },
-        { q: "x³ - 3x²y + 3xy² - y³", a: "(x-y)^3" },
-        { q: "a³ + b³ + c³ - 3abc", a: "(a+b+c)(a^2+b^2+c^2-ab-bc-ca)" }
+// 係数候補（あまり大きくしない）
+const COEFFS = [1, 2, 3];
+const CONSTS = [1, 2, 3, 4, 5];
+const VAR_PAIRS = [['x','y'], ['a','b']];
+const SINGLE_VARS = ['x', 'a'];
+
+// 累乗表記を上付き文字にする
+function toSup(n) {
+  const map = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+  return String(n).split('').map(c => map[c] || c).join('');
+}
+
+// 項を表示用に整形
+function fmtTerm(coef, varStr, isFirst) {
+  // coef が 0 なら何も出ない（呼び元で排除）
+  let sign = coef < 0 ? '−' : (isFirst ? '' : '+');
+  let abs = Math.abs(coef);
+  let num = (abs === 1 && varStr) ? '' : String(abs);
+  return `${isFirst && coef < 0 ? '−' : sign}${isFirst ? '' : ' '}${isFirst ? '' : ''}${num}${varStr}`;
+}
+
+// 表示式生成
+function buildDisplay(terms) {
+  // terms: [{coef, varPart}, ...]
+  let out = '';
+  terms.forEach((t, i) => {
+    if (t.coef === 0) return;
+    let absC = Math.abs(t.coef);
+    let numPart = (absC === 1 && t.varPart) ? '' : String(absC);
+    if (i === 0) {
+      out += (t.coef < 0 ? '−' : '') + numPart + t.varPart;
+    } else {
+      out += ' ' + (t.coef < 0 ? '−' : '+') + ' ' + numPart + t.varPart;
+    }
+  });
+  return out;
+}
+
+// ----- パターン1: (ax + b)^3 を展開した形 -----
+// (ax + by)^3 = a^3 x^3 + 3a^2 b x^2 y + 3a b^2 x y^2 + b^3 y^3
+function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while(b){ [a,b]=[b,a%b]; } return a; }
+
+function genCubeExpansion() {
+  // sign: +1 or -1 (内部の符号 ax + by か ax - by)
+  const sign = Math.random() < 0.5 ? 1 : -1;
+  // 2変数にするか、1変数+定数にするか
+  const twoVar = Math.random() < 0.5;
+  let aCoef, bCoef, aVar, bVar, aVarDisp, bVarDisp;
+
+  if (twoVar) {
+    const [v1, v2] = VAR_PAIRS[Math.floor(Math.random() * VAR_PAIRS.length)];
+    do {
+      aCoef = COEFFS[Math.floor(Math.random() * COEFFS.length)];
+      bCoef = COEFFS[Math.floor(Math.random() * COEFFS.length)];
+    } while (gcd(aCoef, bCoef) > 1);
+    aVar = v1; bVar = v2;
+  } else {
+    // (ax + c)^3 の形
+    do {
+      aCoef = COEFFS[Math.floor(Math.random() * COEFFS.length)];
+      bCoef = CONSTS[Math.floor(Math.random() * CONSTS.length)];
+    } while (gcd(aCoef, bCoef) > 1);
+    aVar = SINGLE_VARS[Math.floor(Math.random() * SINGLE_VARS.length)];
+    bVar = ''; // 定数
+  }
+
+  // 展開: a^3 x^3, 3 a^2 b x^2 y, 3 a b^2 x y^2, b^3 y^3
+  // 符号: (A + B)^3 なら全部+、(A - B)^3 なら +,-,+,-
+  const signs = sign > 0 ? [1,1,1,1] : [1,-1,1,-1];
+  const c1 = signs[0] * Math.pow(aCoef, 3);
+  const c2 = signs[1] * 3 * Math.pow(aCoef, 2) * bCoef;
+  const c3 = signs[2] * 3 * aCoef * Math.pow(bCoef, 2);
+  const c4 = signs[3] * Math.pow(bCoef, 3);
+
+  // 表示部分
+  const vp1 = aVar + toSup(3);
+  const vp2 = (bVar ? aVar + toSup(2) + bVar : aVar + toSup(2));
+  const vp3 = (bVar ? aVar + bVar + toSup(2) : aVar);
+  const vp4 = (bVar ? bVar + toSup(3) : '');
+
+  const display = buildDisplay([
+    {coef: c1, varPart: vp1},
+    {coef: c2, varPart: vp2},
+    {coef: c3, varPart: vp3},
+    {coef: c4, varPart: vp4}
+  ]);
+
+  // mathjs 用の問題式（評価可能形式）
+  const mv1 = `(${c1})*${aVar}^3`;
+  const mv2 = (bVar ? `(${c2})*${aVar}^2*${bVar}` : `(${c2})*${aVar}^2`);
+  const mv3 = (bVar ? `(${c3})*${aVar}*${bVar}^2` : `(${c3})*${aVar}`);
+  const mv4 = (bVar ? `(${c4})*${bVar}^3` : `(${c4})`);
+  const mathExpr = `${mv1} + ${mv2} + ${mv3} + ${mv4}`;
+
+  // 正解の因数分解形 (aCoef * aVar  ±  bCoef * bVar/const)^3
+  const signStr = sign > 0 ? '+' : '-';
+  // 答えもmathjsで評価できる形で保持
+  const aPart = (aCoef === 1 ? aVar : `${aCoef}*${aVar}`);
+  const bPart = bVar
+    ? (bCoef === 1 ? bVar : `${bCoef}*${bVar}`)
+    : String(bCoef);
+  const answerMath = `(${aPart} ${signStr} ${bPart})^3`;
+
+  // ユニークキー（重複判定用）
+  const key = `cube|${aCoef}|${bCoef}|${aVar}|${bVar}|${sign}`;
+
+  return { display, mathExpr, answerMath, key, type: 'cube' };
+}
+
+// ----- パターン2: a^3 ± b^3 -----
+// a^3 + b^3 = (a+b)(a^2 - ab + b^2)
+// a^3 - b^3 = (a-b)(a^2 + ab + b^2)
+function genSumDiffCubes() {
+  const sign = Math.random() < 0.5 ? 1 : -1;
+  const twoVar = Math.random() < 0.5;
+  let aCoef, bCoef, aVar, bVar;
+
+  if (twoVar) {
+    const [v1, v2] = VAR_PAIRS[Math.floor(Math.random() * VAR_PAIRS.length)];
+    do {
+      aCoef = COEFFS[Math.floor(Math.random() * COEFFS.length)];
+      bCoef = COEFFS[Math.floor(Math.random() * COEFFS.length)];
+    } while (gcd(aCoef, bCoef) > 1);
+    aVar = v1; bVar = v2;
+  } else {
+    aCoef = 1; // x^3 ± c^3 の形（aCoef=1なのでgcd常に1）
+    bCoef = CONSTS[Math.floor(Math.random() * CONSTS.length)];
+    aVar = SINGLE_VARS[Math.floor(Math.random() * SINGLE_VARS.length)];
+    bVar = '';
+  }
+
+  const c1 = Math.pow(aCoef, 3);
+  const c2 = sign * Math.pow(bCoef, 3);
+
+  const vp1 = aVar + toSup(3);
+  const vp2 = (bVar ? bVar + toSup(3) : '');
+
+  const display = buildDisplay([
+    {coef: c1, varPart: vp1},
+    {coef: c2, varPart: vp2}
+  ]);
+
+  const mv1 = `(${c1})*${aVar}^3`;
+  const mv2 = (bVar ? `(${c2})*${bVar}^3` : `(${c2})`);
+  const mathExpr = `${mv1} + ${mv2}`;
+
+  // 正解: (aA ± bB)(a²A² ∓ abAB + b²B²)
+  const signStr = sign > 0 ? '+' : '-';
+  const invSignStr = sign > 0 ? '-' : '+';
+  const aPart = (aCoef === 1 ? aVar : `${aCoef}*${aVar}`);
+  const bPart = bVar
+    ? (bCoef === 1 ? bVar : `${bCoef}*${bVar}`)
+    : String(bCoef);
+
+  const answerMath = `(${aPart} ${signStr} ${bPart})*((${aPart})^2 ${invSignStr} (${aPart})*(${bPart}) + (${bPart})^2)`;
+
+  const key = `sumdiff|${aCoef}|${bCoef}|${aVar}|${bVar}|${sign}`;
+
+  return { display, mathExpr, answerMath, key, type: 'sumdiff' };
+}
+
+// 問題生成器（直前と違う問題を生成）
+let lastKey = null;
+function generateProblem() {
+  let p;
+  let attempts = 0;
+  do {
+    p = Math.random() < 0.5 ? genCubeExpansion() : genSumDiffCubes();
+    attempts++;
+    if (attempts > 20) break;
+  } while (p.key === lastKey);
+  lastKey = p.key;
+  return p;
+}
+
+// ========== 答え判定（mathjs を使った同値判定） ==========
+// 入力は内部的に  変数^ や * を明示した形に変換してから比較
+function normalizeInput(raw) {
+  // raw: ユーザーが組み立てた式（例: "(x+2)^3"）
+  // mathjsが食える形にする（^と*は既にそのまま使える）
+  // ただし暗黙の乗算（例: "2x" → "2*x", "(x+1)(x-1)" → "(x+1)*(x-1)"）を補う
+  let s = raw;
+  // 数字と変数の間 (2x → 2*x)
+  s = s.replace(/(\d)([a-zA-Z])/g, '$1*$2');
+  // 閉じ括弧と変数/数字/開き括弧 ((x+1)x → (x+1)*x, 2(x+1) は上で処理済み)
+  s = s.replace(/\)([a-zA-Z0-9(])/g, ')*$1');
+  // 変数と開き括弧 (x(y+1) → x*(y+1))
+  s = s.replace(/([a-zA-Z])\(/g, '$1*(');
+  // 数字と開き括弧 (2(x+1) → 2*(x+1))
+  s = s.replace(/(\d)\(/g, '$1*(');
+  // 変数同士の並び (xy → x*y)  ... ただし関数名など長い識別子が無い前提でOK
+  s = s.replace(/([a-zA-Z])([a-zA-Z])/g, '$1*$2');
+  return s;
+}
+
+function isEquivalent(userRaw, targetMath) {
+  try {
+    const normalized = normalizeInput(userRaw);
+    // 両方展開して係数比較
+    const userExpanded = math.simplify(normalized, {}, {exactFractions: true});
+    const targetExpanded = math.simplify(targetMath, {}, {exactFractions: true});
+    // 差を取って展開し、0になるか確認
+    const diff = math.simplify(`(${normalized}) - (${targetMath})`,
+      [
+        ...math.simplify.rules
+      ],
+      {exactFractions: true}
+    );
+    // diff を数値的に複数点で評価してゼロになるかチェック（ロバスト）
+    const testPoints = [
+      {x: 2, y: 3, a: 2, b: 3},
+      {x: -1, y: 5, a: 4, b: -2},
+      {x: 7, y: -3, a: -1, b: 6},
+      {x: 1.5, y: 2.5, a: 0.5, b: 1.3}
     ];
-
-    function add(str) {
-        const input = document.getElementById('user-input');
-        input.value += str;
-        input.focus();
+    for (const pt of testPoints) {
+      const v = math.evaluate(`(${normalized}) - (${targetMath})`, pt);
+      if (Math.abs(v) > 1e-6) return false;
     }
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
 
-    function refresh() {
-        currentQ = problems[Math.floor(Math.random() * problems.length)];
-        document.getElementById('problem').innerText = currentQ.q;
-        document.getElementById('user-input').value = "";
-        document.getElementById('msg').innerText = "";
-    }
+// ========== ゲームロジック ==========
+const LEVELS = [
+  { lv: 1, required: 2, enemies: [
+    { name: 'スライム',    sprite: '🟢', hp: 1 },
+    { name: 'ドラキー',    sprite: '🦇', hp: 1 }
+  ]},
+  { lv: 2, required: 3, enemies: [
+    { name: 'おおさそり',   sprite: '🦂', hp: 1 },
+    { name: 'リカント',     sprite: '🐺', hp: 1 },
+    { name: 'キメラ',       sprite: '🦅', hp: 1 }
+  ]},
+  { lv: 3, required: 4, enemies: [
+    { name: 'ベビーサタン', sprite: '👹', hp: 1 },
+    { name: 'ゴーレム',     sprite: '🗿', hp: 1 },
+    { name: 'ミミック',     sprite: '📦', hp: 1 },
+    { name: 'ダースドラゴン', sprite: '🐉', hp: 1 }
+  ]},
+  { lv: 'BOSS', required: 1, enemies: [
+    { name: '魔王ドラゴン', sprite: '🐲', hp: 2, isBoss: true }
+  ]}
+];
 
-    function check() {
-        const input = document.getElementById('user-input').value.replace(/\s+/g, "");
-        const ans = currentQ.a.replace(/\s+/g, "");
-        const log = document.getElementById('msg');
+const state = {
+  levelIdx: 0,
+  defeatedInLevel: 0,
+  enemyIdx: 0,
+  enemyHp: 1,
+  lives: 2,
+  problem: null,
+  attemptsOnCurrent: 0,
+  awaitingContinue: false,
+  gameStarted: false
+};
 
-        if(input === ans) {
-            score += 100;
-            document.getElementById('score').innerText = score;
-            log.style.color = "#00ffcc";
-            log.innerText = "SUCCESS! 次の敵が現れた！";
-            setTimeout(refresh, 1000);
-        } else {
-            log.style.color = "#ff4444";
-            log.innerText = "FAILED... 公式を確認せよ";
-        }
-    }
+// DOM refs
+const $ = id => document.getElementById(id);
+const levelDisplay = $('levelDisplay');
+const livesDisplay = $('livesDisplay');
+const progressDisplay = $('progressDisplay');
+const enemyHpDisplay = $('enemyHpDisplay');
+const monsterEl = $('monster');
+const monsterNameEl = $('monsterName');
+const problemExprEl = $('problemExpr');
+const inputBoxEl = $('inputBox');
+const messageEl = $('message');
+const msgArrow = $('msgArrow');
+const flashEl = $('flash');
+const fieldEl = $('field');
 
-    document.getElementById('user-input').addEventListener('keypress', (e) => {
-        if(e.key === 'Enter') check();
+// 入力管理（カーソル対応）
+let userInput = '';
+let cursorPos = 0;
+
+function updateInput() {
+  // カーソル位置に▌を挿入して表示
+  const before = userInput.slice(0, cursorPos);
+  const after = userInput.slice(cursorPos);
+  inputBoxEl.innerHTML = escHtml(before) + '<span class="cursor">▌</span>' + escHtml(after);
+}
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// 入力欄タップでカーソル移動
+inputBoxEl.addEventListener('click', e => {
+  if (!state.gameStarted) return;
+  // タップ位置から最寄りの文字間を計算
+  // 等幅フォントなので、文字幅ベースで計算
+  const rect = inputBoxEl.getBoundingClientRect();
+  const clickX = e.clientX - rect.left;
+  const boxWidth = rect.width;
+  const text = userInput;
+  const len = text.length;
+  if (len === 0) { cursorPos = 0; updateInput(); return; }
+
+  // テキスト全体の描画幅を測定（隠しcanvas使用）
+  if (!inputBoxEl._measureCanvas) {
+    inputBoxEl._measureCanvas = document.createElement('canvas');
+  }
+  const ctx = inputBoxEl._measureCanvas.getContext('2d');
+  const style = getComputedStyle(inputBoxEl);
+  ctx.font = style.fontSize + ' ' + style.fontFamily;
+  const totalTextWidth = ctx.measureText(text).width;
+  // テキスト中央揃えでのオフセット
+  const textStartX = (boxWidth - totalTextWidth) / 2 - parseFloat(style.paddingLeft || 0);
+  const relX = clickX - parseFloat(style.paddingLeft || 0) - textStartX + parseFloat(style.paddingLeft || 0);
+
+  // 各文字位置を計算して最も近い境界を見つける
+  let bestPos = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i <= len; i++) {
+    const w = ctx.measureText(text.slice(0, i)).width;
+    const dist = Math.abs(relX - w);
+    if (dist < bestDist) { bestDist = dist; bestPos = i; }
+  }
+  cursorPos = bestPos;
+  updateInput();
+});
+// 正解の表示用フォーマット（mathjs形式→人間向け）
+function formatAnswer(mathExpr) {
+  let s = mathExpr;
+  // まず具体的な数値計算を行って簡略化
+  // (3)^2 → 9, (2*x)^2 → 4x² のようなパターンを処理
+  // Step1: 純粋な数の累乗を計算 e.g. (3)^2→9, (1)^2→1
+  s = s.replace(/\((\d+)\)\^(\d+)/g, (_, n, p) => String(Math.pow(parseInt(n), parseInt(p))));
+  // Step2: (数*変数)^2 → 数²変数² e.g. (2*x)^2→4x², (3*b)^2→9b²
+  s = s.replace(/\((\d+)\*(\w)\)\^2/g, (_, n, v) => {
+    const sq = Math.pow(parseInt(n), 2);
+    return (sq === 1 ? '' : sq) + v + '²';
+  });
+  // Step3: (数*変数)^3 → 数³変数³
+  s = s.replace(/\((\d+)\*(\w)\)\^3/g, (_, n, v) => {
+    const cu = Math.pow(parseInt(n), 3);
+    return (cu === 1 ? '' : cu) + v + '³';
+  });
+  // Step4: (変数)^2 → 変数²
+  s = s.replace(/\((\w)\)\^2/g, '$1²');
+  s = s.replace(/\((\w)\)\^3/g, '$1³');
+  // Step5: (数*変数)*(数*変数) → 数数*変数変数 → 積を計算
+  // e.g. (x)*(3) → 3x,  (2*a)*(3*b) → 6ab
+  s = s.replace(/\((\d+)\*(\w)\)\*\((\d+)\*(\w)\)/g, (_, n1, v1, n2, v2) => {
+    const prod = parseInt(n1) * parseInt(n2);
+    return (prod === 1 ? '' : prod) + v1 + v2;
+  });
+  s = s.replace(/\((\w)\)\*\((\d+)\*(\w)\)/g, (_, v1, n2, v2) => {
+    const prod = parseInt(n2);
+    return (prod === 1 ? '' : prod) + v1 + v2;
+  });
+  s = s.replace(/\((\d+)\*(\w)\)\*\((\w)\)/g, (_, n1, v1, v2) => {
+    const prod = parseInt(n1);
+    return (prod === 1 ? '' : prod) + v1 + v2;
+  });
+  s = s.replace(/\((\w)\)\*\((\d+)\)/g, (_, v, n) => {
+    return (n === '1' ? '' : n) + v;
+  });
+  s = s.replace(/\((\d+)\)\*\((\w)\)/g, (_, n, v) => {
+    return (n === '1' ? '' : n) + v;
+  });
+  s = s.replace(/\((\w)\)\*\((\w)\)/g, '$1$2');
+  // Step6: 残った不要な括弧を除去: (x)→x, (2)→2
+  s = s.replace(/\((\w+)\)/g, '$1');
+  // Step7: * を除去
+  s = s.replace(/\*/g, '');
+  // Step8: ^3→³, ^2→²
+  s = s.replace(/\^3/g, '³').replace(/\^2/g, '²');
+  return s;
+}
+
+// キーパッド構築
+// レイアウト: 5列
+// 行1: 1 2 3 + −
+// 行2: 4 5 6 ² ³
+// 行3: 7 8 9 ( )
+// 行4: x y a b ←
+// 行5: [▶ こうげき！(span5)]
+
+function buildKeypad() {
+  const pad = $('keypad');
+  pad.innerHTML = '';
+  pad.style.gridTemplateColumns = 'repeat(5, 1fr)';
+
+  const rows = [
+    [{l:'1',v:'1'},{l:'2',v:'2'},{l:'3',v:'3'},{l:'+',v:'+',cls:'op'},{l:'−',v:'-',cls:'op'}],
+    [{l:'4',v:'4'},{l:'5',v:'5'},{l:'6',v:'6'},{l:'²',v:'^2',cls:'op'},{l:'³',v:'^3',cls:'op'}],
+    [{l:'7',v:'7'},{l:'8',v:'8'},{l:'9',v:'9'},{l:'(',v:'(',cls:'op'},{l:')',v:')',cls:'op'}],
+    [{l:'x',v:'x',cls:'var'},{l:'y',v:'y',cls:'var'},{l:'a',v:'a',cls:'var'},{l:'b',v:'b',cls:'var'},{l:'←',v:'BS',cls:'action'}],
+  ];
+
+  rows.forEach(row => {
+    row.forEach(k => {
+      const btn = document.createElement('button');
+      btn.className = 'key';
+      if (k.cls) btn.classList.add(k.cls);
+      btn.textContent = k.l;
+      if (k.v === 'BS') {
+        btn.addEventListener('click', handleBackspace);
+      } else {
+        btn.addEventListener('click', () => handleKey(k.v));
+      }
+      pad.appendChild(btn);
     });
+  });
 
-    refresh();
+  const submitBtn = document.createElement('button');
+  submitBtn.className = 'key submit';
+  submitBtn.style.gridColumn = 'span 5';
+  submitBtn.textContent = '▶ こうげき！';
+  submitBtn.addEventListener('click', handleSubmit);
+  pad.appendChild(submitBtn);
+}
+
+function handleKey(v) {
+  if (state.awaitingContinue || !state.gameStarted) return;
+  // カーソル位置に挿入
+  userInput = userInput.slice(0, cursorPos) + v + userInput.slice(cursorPos);
+  cursorPos += v.length;
+  updateInput();
+}
+function handleBackspace() {
+  if (state.awaitingContinue || !state.gameStarted) return;
+  if (cursorPos === 0) return;
+  // カーソル左の文字を削除（^2, ^3 は2文字まとめて）
+  const before = userInput.slice(0, cursorPos);
+  if (before.endsWith('^2') || before.endsWith('^3')) {
+    userInput = userInput.slice(0, cursorPos - 2) + userInput.slice(cursorPos);
+    cursorPos -= 2;
+  } else {
+    userInput = userInput.slice(0, cursorPos - 1) + userInput.slice(cursorPos);
+    cursorPos -= 1;
+  }
+  updateInput();
+}
+function handleClear() {
+  if (state.awaitingContinue || !state.gameStarted) return;
+  userInput = '';
+  cursorPos = 0;
+  updateInput();
+}
+
+// ステータス更新
+function renderStatus() {
+  const lvl = LEVELS[state.levelIdx];
+  levelDisplay.textContent = lvl.lv === 'BOSS' ? 'BOSS' : `LV ${lvl.lv}`;
+  livesDisplay.innerHTML = '♥'.repeat(state.lives) + '<span class="empty">' + '♡'.repeat(2 - state.lives) + '</span>';
+  if (lvl.lv === 'BOSS') {
+    progressDisplay.textContent = '最終戦';
+  } else {
+    progressDisplay.textContent = `${state.defeatedInLevel}/${lvl.required}`;
+  }
+  enemyHpDisplay.textContent = `HP ${state.enemyHp}`;
+}
+
+// 敵描画
+function renderEnemy() {
+  const lvl = LEVELS[state.levelIdx];
+  const enemy = lvl.enemies[state.enemyIdx];
+  monsterEl.textContent = enemy.sprite;
+  monsterEl.className = enemy.isBoss ? 'boss' : '';
+  monsterNameEl.textContent = enemy.name;
+}
+
+// メッセージ表示（タイプライター風は省略し、即時表示）
+function setMessage(text, showArrow = false) {
+  messageEl.firstChild.textContent = text;
+  msgArrow.style.display = showArrow ? 'inline' : 'none';
+}
+
+// 問題表示
+function renderProblem() {
+  problemExprEl.textContent = state.problem.display;
+}
+
+// ダメージ演出
+function showDamage(text, color = '#ff4444') {
+  const d = document.createElement('div');
+  d.className = 'dmg-float';
+  d.textContent = text;
+  d.style.color = color;
+  d.style.textShadow = `2px 2px 0 #000, 0 0 8px ${color}`;
+  const rect = monsterEl.getBoundingClientRect();
+  const fieldRect = fieldEl.getBoundingClientRect();
+  d.style.left = `${rect.left - fieldRect.left + rect.width/2 - 20}px`;
+  d.style.top = `${rect.top - fieldRect.top + 10}px`;
+  fieldEl.appendChild(d);
+  setTimeout(() => d.remove(), 1000);
+}
+
+function flashScreen() {
+  flashEl.classList.remove('on');
+  void flashEl.offsetWidth;
+  flashEl.classList.add('on');
+}
+
+// レベルアップ演出
+function showLevelUp() {
+  const el = document.createElement('div');
+  el.className = 'level-up';
+  el.textContent = 'LEVEL UP!';
+  fieldEl.appendChild(el);
+  setTimeout(() => el.remove(), 1800);
+}
+
+// ========== ゲームフロー ==========
+function startGame() {
+  state.levelIdx = 0;
+  state.defeatedInLevel = 0;
+  state.enemyIdx = 0;
+  state.lives = 2;
+  state.awaitingContinue = false;
+  state.gameStarted = true;
+  lastKey = null;
+  userInput = '';
+  cursorPos = 0;
+  updateInput();
+  const lvl = LEVELS[state.levelIdx];
+  state.enemyHp = lvl.enemies[0].hp;
+  renderEnemy();
+  renderStatus();
+  nextProblem();
+  setMessage(`${lvl.enemies[0].name}が　あらわれた！`);
+}
+
+function nextProblem() {
+  state.problem = generateProblem();
+  state.attemptsOnCurrent = 0;
+  userInput = '';
+  cursorPos = 0;
+  updateInput();
+  renderProblem();
+}
+
+// --- 「▼タップで続ける」仕組み ---
+let continueCallback = null;
+function awaitTap(callback) {
+  state.awaitingContinue = true;
+  continueCallback = callback;
+  msgArrow.style.display = 'inline';
+}
+function handleContinueTap() {
+  if (!state.awaitingContinue || !continueCallback) return;
+  msgArrow.style.display = 'none';
+  state.awaitingContinue = false;
+  const cb = continueCallback;
+  continueCallback = null;
+  cb();
+}
+// メッセージエリアタップで続行
+messageEl.addEventListener('click', handleContinueTap);
+// フィールドタップでも続行（広い領域で受け付ける）
+fieldEl.addEventListener('click', handleContinueTap);
+
+function handleSubmit() {
+  if (!state.gameStarted) return;
+  // awaitingContinue中はタップで続行
+  if (state.awaitingContinue) { handleContinueTap(); return; }
+  if (userInput.trim() === '') {
+    setMessage('しきを　にゅうりょくしてね！');
+    return;
+  }
+
+  const correct = isEquivalent(userInput, state.problem.answerMath);
+
+  if (correct) {
+    onCorrect();
+  } else {
+    onWrong();
+  }
+}
+
+function onCorrect() {
+  state.enemyHp -= 1;
+  flashScreen();
+  monsterEl.classList.remove('hit');
+  void monsterEl.offsetWidth;
+  monsterEl.classList.add('hit');
+  showDamage('-1', '#ffff00');
+
+  const lvl = LEVELS[state.levelIdx];
+  const enemy = lvl.enemies[state.enemyIdx];
+
+  if (state.enemyHp <= 0) {
+    // 撃破
+    setTimeout(() => {
+      monsterEl.classList.add('dying');
+      setMessage(`${enemy.name}を　たおした！`);
+      renderStatus();
+      setTimeout(() => onEnemyDefeated(), 1200);
+    }, 300);
+  } else {
+    // ボスなどで追加HP
+    setMessage(`こうげき！　${enemy.name}に\nダメージ！　あと HP${state.enemyHp}！`);
+    renderStatus();
+    setTimeout(() => {
+      state.lives = 2;
+      nextProblem();
+      setMessage(`つぎの　もんだい！`);
+      renderStatus();
+    }, 1400);
+  }
+}
+
+function onWrong() {
+  state.lives -= 1;
+  monsterEl.classList.remove('miss-dmg');
+  void monsterEl.offsetWidth;
+  monsterEl.classList.add('miss-dmg');
+  showDamage('MISS', '#ff4444');
+  renderStatus();
+
+  // 入力欄を赤くする
+  inputBoxEl.classList.add('error');
+
+  const answer = formatAnswer(state.problem.answerMath);
+
+  if (state.lives <= 0) {
+    // ライフ切れ → 正解見せてからゲームオーバーへ
+    setMessage(`ミス！　せいかいは\n${answer}`);
+    awaitTap(() => {
+      inputBoxEl.classList.remove('error');
+      showGameOver();
+    });
+  } else {
+    // まだライフあり → 式を残してリトライ
+    setMessage(`ミス！　こうげきが　はずれた…\n（のこりライフ　${state.lives}）`);
+    awaitTap(() => {
+      inputBoxEl.classList.remove('error');
+      updateInput();
+      setMessage('もういちど　チャレンジ！');
+    });
+  }
+}
+
+function onEnemyDefeated() {
+  const lvl = LEVELS[state.levelIdx];
+  const enemy = lvl.enemies[state.enemyIdx];
+
+  if (enemy.isBoss) {
+    // ボス撃破 → エンディング
+    showEnding();
+    return;
+  }
+
+  state.defeatedInLevel += 1;
+  state.lives = 2; // ライフ回復
+  renderStatus();
+
+  if (state.defeatedInLevel >= lvl.required) {
+    // レベルアップ
+    showLevelUp();
+    setTimeout(() => {
+      state.levelIdx += 1;
+      state.defeatedInLevel = 0;
+      state.enemyIdx = 0;
+      const nextLvl = LEVELS[state.levelIdx];
+      state.enemyHp = nextLvl.enemies[0].hp;
+      monsterEl.classList.remove('dying');
+      renderEnemy();
+      renderStatus();
+      nextProblem();
+      state.awaitingContinue = false;
+      if (nextLvl.lv === 'BOSS') {
+        setMessage(`まおうが　あらわれた！\nちからの　かぎりを　つくせ！`);
+      } else {
+        setMessage(`LV ${nextLvl.lv}に なった！\n${nextLvl.enemies[0].name}が　あらわれた！`);
+      }
+    }, 1800);
+  } else {
+    // 次の敵
+    setTimeout(() => {
+      state.enemyIdx += 1;
+      const nextEnemy = lvl.enemies[state.enemyIdx];
+      state.enemyHp = nextEnemy.hp;
+      monsterEl.classList.remove('dying');
+      renderEnemy();
+      renderStatus();
+      nextProblem();
+      state.awaitingContinue = false;
+      setMessage(`${nextEnemy.name}が　あらわれた！`);
+    }, 900);
+  }
+}
+
+function showEnding() {
+  $('endingScreen').classList.remove('hidden');
+}
+function showGameOver() {
+  $('gameOverScreen').classList.remove('hidden');
+  state.gameStarted = false;
+}
+
+// イベント
+$('startBtn').addEventListener('click', () => {
+  $('titleScreen').classList.add('hidden');
+  startGame();
+});
+$('restartBtn').addEventListener('click', () => {
+  $('endingScreen').classList.add('hidden');
+  startGame();
+});
+$('retryBtn').addEventListener('click', () => {
+  $('gameOverScreen').classList.add('hidden');
+  startGame();
+});
+
+// 物理キーボードも受け付ける（PC 検証用）
+document.addEventListener('keydown', e => {
+  if (!state.gameStarted) {
+    if (e.key === 'Enter') {
+      if (!$('titleScreen').classList.contains('hidden')) $('startBtn').click();
+      else if (!$('endingScreen').classList.contains('hidden')) $('restartBtn').click();
+      else if (!$('gameOverScreen').classList.contains('hidden')) $('retryBtn').click();
+    }
+    return;
+  }
+  if (state.awaitingContinue) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleContinueTap(); }
+    return;
+  }
+  if (e.key === 'Enter') { e.preventDefault(); handleSubmit(); }
+  else if (e.key === 'Backspace') { e.preventDefault(); handleBackspace(); }
+  else if ('123456789+-()xyab'.includes(e.key)) { handleKey(e.key); }
+});
+
+// 初期化
+buildKeypad();
+updateInput();
+renderStatus();
+renderEnemy();
+// タイトル画面を表示状態にしておく（最初から）
 </script>
 </body>
 </html>
