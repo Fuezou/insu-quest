@@ -2,101 +2,113 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Insu-Quest: RPG Mode</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Insu-Quest</title>
     <style>
-        body { background: #1a1a1a; color: #fff; font-family: 'Hiragino Kaku Gothic ProN', sans-serif; margin: 0; padding: 20px; text-align: center; }
-        #game-container { max-width: 500px; margin: 0 auto; background: #2c3e50; border: 4px solid #ecf0f1; border-radius: 10px; padding: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-        #monster { font-size: 80px; margin: 20px 0; min-height: 100px; }
-        #question-box { background: #34495e; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 5px solid #e74c3c; }
-        #formula { font-size: 24px; font-weight: bold; }
-        .choices { display: grid; grid-template-columns: 1fr; gap: 10px; }
-        .choice-btn { background: #ecf0f1; border: none; padding: 15px; border-radius: 5px; font-size: 18px; font-weight: bold; color: #2c3e50; cursor: pointer; transition: transform 0.1s; -webkit-tap-highlight-color: transparent; }
-        .choice-btn:active { transform: scale(0.95); background: #bdc3c7; }
-        #status { margin-top: 20px; font-size: 16px; color: #f1c40f; }
-        .msg { height: 24px; margin-top: 10px; color: #2ecc71; font-weight: bold; }
+        :root { --main-green: #00ff41; --bg-black: #0d0208; }
+        body { background: var(--bg-black); color: var(--main-green); font-family: 'Courier New', Courier, monospace; margin: 0; padding: 0; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+        #game-board { width: 90%; max-width: 400px; border: 2px solid var(--main-green); padding: 15px; border-radius: 8px; background: rgba(0, 40, 0, 0.2); }
+        #status-bar { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 10px; border-bottom: 1px solid var(--main-green); padding-bottom: 5px; }
+        #monster-area { font-size: 60px; height: 100px; display: flex; align-items: center; justify-content: center; margin: 20px 0; text-shadow: 0 0 10px var(--main-green); }
+        #formula-display { font-size: 24px; font-weight: bold; margin: 20px 0; min-height: 40px; color: #fff; }
+        .choices-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+        .choice-btn { background: transparent; border: 1px solid var(--main-green); color: var(--main-green); padding: 15px 5px; font-size: 16px; border-radius: 4px; cursor: pointer; transition: 0.2s; }
+        .choice-btn:active { background: var(--main-green); color: var(--bg-black); }
+        #message-log { height: 20px; margin-top: 15px; font-size: 14px; color: #fff; }
+        .lv-up { color: #f1c40f; font-weight: bold; animation: blink 0.5s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
 
-<div id="game-container">
-    <div id="status">LV: <span id="lv">1</span> | 倒した数: <span id="score">0</span></div>
-    <div id="monster">👾</div>
-    <div id="question-box">
-        <div style="font-size: 14px; color: #bdc3c7;">この式を因数分解せよ！</div>
-        <div id="formula">読み込み中...</div>
+<div id="game-board">
+    <div id="status-bar">
+        <span>LV: <span id="val-lv">1</span></span>
+        <span>EXP: <span id="val-exp">0</span></span>
+        <span>NEXT: <span id="val-next">5</span></span>
     </div>
-    <div class="choices" id="choices-area">
-        </div>
-    <div class="msg" id="message"></div>
+    <div id="monster-area">👾</div>
+    <div style="font-size: 12px;">ENCOUNTER! FACTORIZE THIS:</div>
+    <div id="formula-display">...</div>
+    <div class="choices-container" id="choices-area"></div>
+    <div id="message-log"></div>
 </div>
 
 <script>
-    let score = 0;
     let lv = 1;
-    const monsters = ["👾", "👹", "👻", "🐉", "🧛", "👽", "🤖"];
+    let exp = 0;
+    let nextLv = 5;
+    const monsterIcons = ["👾", "💀", "👻", "👹", "🤖", "🐲", "🧛"];
 
-    function generateQuestion() {
-        // x^2 + (a+b)x + ab の形
-        const a = Math.floor(Math.random() * 6) + 1;
-        const b = Math.floor(Math.random() * 6) + 1;
-        const sum = a + b;
-        const prod = a * b;
+    function generateQ() {
+        // 基本の (x+a)(x+b) 形式
+        const a = Math.floor(Math.random() * (4 + lv)) + 1;
+        const b = Math.floor(Math.random() * (4 + lv)) + 1;
+        const s = a + b;
+        const p = a * b;
         
-        const formula = `x² + ${sum}x + ${prod}`;
-        const correct = `(x + ${a})(x + ${b})`;
+        const formula = `x² + ${s}x + ${p}`;
+        const ans = `(x+${a})(x+${b})`;
         
-        // ダミーの選択肢を作成
         const dummies = [
-            `(x + ${a+1})(x + ${b-1 === 0 ? 7 : b-1})`,
-            `(x - ${a})(x - ${b})`,
-            `(x + ${prod})(x + 1)`
-        ];
+            `(x+${a+1})(x+${b-1 || 7})`,
+            `(x-${a})(x-${b})`,
+            `(x+${p})(x+1)`,
+            `(x+${s})(x+1)`
+        ].filter(d => d !== ans).slice(0, 3);
         
-        const choices = [correct, ...dummies].sort(() => Math.random() - 0.5);
-        
-        return { formula, correct, choices };
+        const choices = [ans, ...dummies].sort(() => Math.random() - 0.5);
+        return { formula, ans, choices };
     }
 
-    function updateGame() {
-        const q = generateQuestion();
-        document.getElementById('formula').innerText = q.formula;
-        document.getElementById('lv').innerText = lv;
-        document.getElementById('score').innerText = score;
-        document.getElementById('monster').innerText = monsters[score % monsters.length];
+    function initGame() {
+        const q = generateQ();
+        document.getElementById('formula-display').innerText = q.formula;
+        document.getElementById('monster-area').innerText = monsterIcons[Math.floor(Math.random() * monsterIcons.length)];
         
         const area = document.getElementById('choices-area');
         area.innerHTML = '';
         
-        q.choices.forEach(text => {
+        q.choices.forEach(c => {
             const btn = document.createElement('button');
             btn.className = 'choice-btn';
-            btn.innerText = text;
-            btn.onclick = () => {
-                if (text === q.correct) {
-                    score++;
-                    if (score % 5 === 0) lv++;
-                    document.getElementById('message').innerText = "Excellent! 撃破！";
-                    setTimeout(() => {
-                        document.getElementById('message').innerText = "";
-                        updateGame();
-                    }, 600);
-                } else {
-                    document.getElementById('message').innerText = "Miss! 計算し直せ！";
-                    document.getElementById('message').style.color = "#e74c3c";
-                    setTimeout(() => {
-                        document.getElementById('message').style.color = "#2ecc71";
-                        document.getElementById('message').innerText = "";
-                    }, 1000);
-                }
-            };
+            btn.innerText = c;
+            btn.onclick = () => checkAns(c, q.ans);
             area.appendChild(btn);
         });
     }
 
-    // 初回起動
-    updateGame();
-</script>
+    function checkAns(picked, correct) {
+        const log = document.getElementById('message-log');
+        if(picked === correct) {
+            exp++;
+            log.innerText = "CRITICAL HIT! +1 EXP";
+            if(exp >= nextLv) levelUp();
+            updateStatus();
+            setTimeout(initGame, 500);
+        } else {
+            log.innerText = "MISS! TRY AGAIN";
+            log.style.color = "#ff4141";
+            setTimeout(() => { log.style.color = "#fff"; log.innerText = ""; }, 1000);
+        }
+    }
 
+    function levelUp() {
+        lv++;
+        exp = 0;
+        nextLv = 5 + (lv * 2);
+        document.getElementById('message-log').innerText = "LEVEL UP! ATTACK UP!";
+        document.getElementById('val-lv').className = 'lv-up';
+        setTimeout(() => { document.getElementById('val-lv').className = ''; }, 2000);
+    }
+
+    function updateStatus() {
+        document.getElementById('val-lv').innerText = lv;
+        document.getElementById('val-exp').innerText = exp;
+        document.getElementById('val-next').innerText = nextLv - exp;
+    }
+
+    initGame();
+</script>
 </body>
 </html>
