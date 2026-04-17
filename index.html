@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -30,335 +31,344 @@
     width: 100%;
     max-width: 480px;
     height: 100vh;
+    height: 100dvh; /* dvh対応ブラウザではこちらが優先 */
     max-height: 900px;
     background: #000;
     display: flex;
     flex-direction: column;
     position: relative;
     border: 2px solid #333;
-  }
-
-  /* --- ドラクエ風ウィンドウ（黒背景＋白二重枠） --- */
-  .dq-window {
-    background: #000;
-    border: 3px solid #fff;
-    box-shadow: 0 0 0 3px #000, 0 0 0 5px #fff;
-    padding: 10px;
-    margin: 6px;
-    position: relative;
-  }
-
-  /* --- 上部：ステータスウィンドウ --- */
-  #status {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-    padding: 8px 12px;
-    font-size: 13px;
-    line-height: 1.8;
-  }
-  #status .row { display: flex; justify-content: space-between; }
-  #status .label { color: #ffff00; letter-spacing: 1px; }
-  #status .value { color: #fff; letter-spacing: 1px; }
-  .hearts { letter-spacing: 2px; color: #ff4444; }
-  .hearts .empty { color: #444; }
-
-  /* --- 中央：バトルフィールド --- */
-  #field {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    min-height: 170px;
     overflow: hidden;
-    background: linear-gradient(180deg, #001428 0%, #002952 60%, #000 100%);
-  }
-  #field::before {
-    /* 星のドット（背景演出） */
-    content: '';
-    position: absolute; inset: 0;
-    background-image:
-      radial-gradient(1px 1px at 20% 30%, #fff 1px, transparent 0),
-      radial-gradient(1px 1px at 70% 20%, #fff 1px, transparent 0),
-      radial-gradient(1px 1px at 40% 70%, #fff 1px, transparent 0),
-      radial-gradient(1px 1px at 85% 55%, #fff 1px, transparent 0),
-      radial-gradient(1px 1px at 15% 85%, #fff 1px, transparent 0),
-      radial-gradient(1px 1px at 55% 40%, #aaa 1px, transparent 0),
-      radial-gradient(1px 1px at 90% 90%, #aaa 1px, transparent 0);
-    pointer-events: none;
-  }
-  #monster {
-    font-size: 84px;
-    line-height: 1;
-    filter: contrast(1.1) saturate(1.2);
-    transition: transform 0.15s, opacity 0.3s;
-    position: relative;
-    z-index: 2;
-    text-shadow: 0 0 8px rgba(255,255,255,0.3);
-  }
-  #monster.boss { font-size: 108px; animation: bossFloat 2s ease-in-out infinite; text-shadow: 0 0 16px rgba(255,0,0,0.6); }
-  @keyframes bossFloat {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-6px); }
-  }
-  #monster.hit { animation: hit 0.3s; }
-  @keyframes hit {
-    0%, 100% { transform: translateX(0); filter: brightness(1); }
-    20% { transform: translateX(-10px); filter: brightness(3) hue-rotate(180deg); }
-    40% { transform: translateX(10px); filter: brightness(3) hue-rotate(180deg); }
-    60% { transform: translateX(-6px); filter: brightness(3); }
-    80% { transform: translateX(6px); }
-  }
-  #monster.dying { animation: die 0.8s forwards; }
-  @keyframes die {
-    0% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.7; transform: scale(1.1); filter: brightness(3); }
-    100% { opacity: 0; transform: scale(0.3) rotate(180deg); }
-  }
-  #monster.miss-dmg { animation: miss 0.4s; }
-  @keyframes miss {
-    0%, 100% { transform: translateX(0); }
-    50% { transform: translateX(0) scale(1.08); filter: brightness(1.3) sepia(0.3); }
-  }
-  #monsterName {
-    position: absolute;
-    top: 8px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 14px;
-    color: #ffff00;
-    letter-spacing: 2px;
-    z-index: 3;
-    text-shadow: 2px 2px 0 #000;
   }
 
-  /* --- 問題ウィンドウ --- */
-  #problemBox {
-    padding: 14px;
-    font-size: 15px;
-    text-align: center;
-    line-height: 1.8;
-    min-height: 88px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
-  #problemBox .label { color: #ffff00; font-size: 12px; margin-bottom: 8px; letter-spacing: 2px; }
-  #problemBox .expr {
-    color: #fff;
-    font-size: 19px;
-    font-family: 'Cambria Math', 'Times New Roman', serif;
-    font-style: italic;
-    letter-spacing: 1px;
-  }
+/* — ドラクエ風ウィンドウ（黒背景＋白二重枠） — */
+.dq-window {
+background: #000;
+border: 3px solid #fff;
+box-shadow: 0 0 0 3px #000, 0 0 0 5px #fff;
+padding: 8px;
+margin: 4px 6px;
+position: relative;
+}
 
-  /* --- 入力表示欄 --- */
-  #inputBox {
-    padding: 10px 12px;
-    min-height: 48px;
-    font-size: 18px;
-    text-align: center;
-    color: #00ff00;
-    font-family: 'Courier New', monospace;
-    letter-spacing: 2px;
-    word-break: break-all;
-    cursor: text;
-  }
-  #inputBox .cursor {
-    color: #ffff00;
-    animation: blink 0.8s steps(2) infinite;
-    font-style: normal;
-  }
-  #inputBox.error {
-    color: #ff4444;
-    text-shadow: 0 0 8px rgba(255,0,0,0.4);
-  }
-  #inputBox.error .cursor { display: none; }
-  @keyframes blink { 50% { opacity: 0; } }
+/* — 上部：ステータスウィンドウ — */
+#status {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 4px;
+padding: 6px 10px;
+font-size: 12px;
+line-height: 1.7;
+flex-shrink: 0;
+}
+#status .row { display: flex; justify-content: space-between; }
+#status .label { color: #ffff00; letter-spacing: 1px; }
+#status .value { color: #fff; letter-spacing: 1px; }
+.hearts { letter-spacing: 2px; color: #ff4444; }
+.hearts .empty { color: #444; }
 
-  /* --- キーパッド --- */
-  #keypad {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 4px;
-    padding: 6px;
-  }
-  .key {
-    background: #000;
-    border: 2px solid #fff;
-    color: #fff;
-    font-family: 'Courier New', monospace;
-    font-size: 18px;
-    font-weight: bold;
-    padding: 10px 0;
-    cursor: pointer;
-    transition: all 0.05s;
-    text-align: center;
-    line-height: 1;
-    min-height: 42px;
-    touch-action: manipulation;
-  }
-  .key:active, .key.pressed {
-    background: #fff;
-    color: #000;
-    transform: translateY(1px);
-  }
-  .key.var { color: #ffff00; font-style: italic; font-family: 'Cambria Math', serif; }
-  .key.op { color: #ff8888; }
-  .key.action { background: #333; color: #aaa; }
-  .key.submit { background: #004488; color: #ffff00; font-size: 15px; }
-  .key.submit:active { background: #0066cc; }
-  .key.clear { background: #440000; color: #ff8888; font-size: 15px; }
-  .key.clear:active { background: #880000; }
+/* — 中央：バトルフィールド — */
+#field {
+flex: 1;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+position: relative;
+min-height: 120px;
+overflow: hidden;
+background: linear-gradient(180deg, #001428 0%, #002952 60%, #000 100%);
+}
+#field::before {
+/* 星のドット（背景演出） */
+content: ‘’;
+position: absolute; inset: 0;
+background-image:
+radial-gradient(1px 1px at 20% 30%, #fff 1px, transparent 0),
+radial-gradient(1px 1px at 70% 20%, #fff 1px, transparent 0),
+radial-gradient(1px 1px at 40% 70%, #fff 1px, transparent 0),
+radial-gradient(1px 1px at 85% 55%, #fff 1px, transparent 0),
+radial-gradient(1px 1px at 15% 85%, #fff 1px, transparent 0),
+radial-gradient(1px 1px at 55% 40%, #aaa 1px, transparent 0),
+radial-gradient(1px 1px at 90% 90%, #aaa 1px, transparent 0);
+pointer-events: none;
+}
+#monster {
+font-size: 84px;
+line-height: 1;
+filter: contrast(1.1) saturate(1.2);
+transition: transform 0.15s, opacity 0.3s;
+position: relative;
+z-index: 2;
+text-shadow: 0 0 8px rgba(255,255,255,0.3);
+}
+#monster.boss { font-size: 108px; animation: bossFloat 2s ease-in-out infinite; text-shadow: 0 0 16px rgba(255,0,0,0.6); }
+@keyframes bossFloat {
+0%, 100% { transform: translateY(0); }
+50% { transform: translateY(-6px); }
+}
+#monster.hit { animation: hit 0.3s; }
+@keyframes hit {
+0%, 100% { transform: translateX(0); filter: brightness(1); }
+20% { transform: translateX(-10px); filter: brightness(3) hue-rotate(180deg); }
+40% { transform: translateX(10px); filter: brightness(3) hue-rotate(180deg); }
+60% { transform: translateX(-6px); filter: brightness(3); }
+80% { transform: translateX(6px); }
+}
+#monster.dying { animation: die 0.8s forwards; }
+@keyframes die {
+0% { opacity: 1; transform: scale(1); }
+50% { opacity: 0.7; transform: scale(1.1); filter: brightness(3); }
+100% { opacity: 0; transform: scale(0.3) rotate(180deg); }
+}
+#monster.miss-dmg { animation: miss 0.4s; }
+@keyframes miss {
+0%, 100% { transform: translateX(0); }
+50% { transform: translateX(0) scale(1.08); filter: brightness(1.3) sepia(0.3); }
+}
+#monsterName {
+position: absolute;
+top: 8px;
+left: 50%;
+transform: translateX(-50%);
+font-size: 14px;
+color: #ffff00;
+letter-spacing: 2px;
+z-index: 3;
+text-shadow: 2px 2px 0 #000;
+}
 
-  /* --- メッセージウィンドウ（下部） --- */
-  #message {
-    min-height: 58px;
-    font-size: 14px;
-    line-height: 1.6;
-    letter-spacing: 1px;
-    white-space: pre-wrap;
-  }
-  #message .arrow {
-    position: absolute;
-    bottom: 8px;
-    right: 12px;
-    color: #fff;
-    animation: blink 0.8s steps(2) infinite;
-    font-size: 14px;
-  }
+/* — 問題ウィンドウ — */
+#problemBox {
+padding: 10px;
+font-size: 14px;
+text-align: center;
+line-height: 1.6;
+min-height: 70px;
+display: flex;
+flex-direction: column;
+justify-content: center;
+flex-shrink: 0;
+}
+#problemBox .label { color: #ffff00; font-size: 11px; margin-bottom: 6px; letter-spacing: 2px; }
+#problemBox .expr {
+color: #fff;
+font-size: 18px;
+font-family: ‘Cambria Math’, ‘Times New Roman’, serif;
+font-style: italic;
+letter-spacing: 1px;
+}
 
-  /* --- オーバーレイ画面（タイトル・エンディング等） --- */
-  .overlay {
-    position: absolute;
-    inset: 0;
-    background: #000;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    z-index: 100;
-    text-align: center;
-  }
-  .overlay.hidden { display: none; }
-  .overlay h1 {
-    font-size: 28px;
-    color: #ffff00;
-    letter-spacing: 3px;
-    margin-bottom: 20px;
-    text-shadow: 3px 3px 0 #884400;
-    line-height: 1.4;
-  }
-  .overlay h2 {
-    font-size: 20px;
-    color: #fff;
-    margin-bottom: 16px;
-    letter-spacing: 2px;
-  }
-  .overlay p {
-    font-size: 14px;
-    color: #fff;
-    line-height: 2;
-    margin-bottom: 16px;
-    letter-spacing: 1px;
-  }
-  .overlay .sub { color: #aaa; font-size: 12px; }
-  .overlay .start-btn {
-    background: #000;
-    border: 3px solid #fff;
-    box-shadow: 0 0 0 3px #000, 0 0 0 5px #fff;
-    color: #ffff00;
-    padding: 14px 28px;
-    font-size: 16px;
-    letter-spacing: 3px;
-    cursor: pointer;
-    margin-top: 20px;
-    font-family: inherit;
-  }
-  .overlay .start-btn:active { background: #fff; color: #000; }
-  .overlay .hero {
-    font-size: 64px;
-    margin-bottom: 12px;
-  }
+/* — 入力表示欄 — */
+#inputBox {
+padding: 8px 10px;
+min-height: 42px;
+font-size: 17px;
+text-align: center;
+color: #00ff00;
+font-family: ‘Courier New’, monospace;
+letter-spacing: 2px;
+word-break: break-all;
+cursor: text;
+flex-shrink: 0;
+}
+#inputBox .cursor {
+color: #ffff00;
+animation: blink 0.8s steps(2) infinite;
+font-style: normal;
+}
+#inputBox.error {
+color: #ff4444;
+text-shadow: 0 0 8px rgba(255,0,0,0.4);
+}
+#inputBox.error .cursor { display: none; }
+@keyframes blink { 50% { opacity: 0; } }
 
-  /* --- ダメージエフェクト --- */
-  .dmg-float {
-    position: absolute;
-    font-size: 28px;
-    font-weight: bold;
-    color: #ff4444;
-    text-shadow: 2px 2px 0 #000, 0 0 8px #ff0000;
-    pointer-events: none;
-    animation: dmgFloat 1s forwards;
-    z-index: 10;
-  }
-  @keyframes dmgFloat {
-    0% { opacity: 1; transform: translateY(0) scale(0.6); }
-    30% { transform: translateY(-20px) scale(1.2); }
-    100% { opacity: 0; transform: translateY(-60px) scale(1); }
-  }
+/* — キーパッド — */
+#keypad {
+display: grid;
+grid-template-columns: repeat(5, 1fr);
+gap: 3px;
+padding: 4px 6px;
+flex-shrink: 0;
+}
+.key {
+background: #000;
+border: 2px solid #fff;
+color: #fff;
+font-family: ‘Courier New’, monospace;
+font-size: 17px;
+font-weight: bold;
+padding: 9px 0;
+cursor: pointer;
+transition: all 0.05s;
+text-align: center;
+line-height: 1;
+min-height: 42px;
+touch-action: manipulation;
+}
+.key:active, .key.pressed {
+background: #fff;
+color: #000;
+transform: translateY(1px);
+}
+.key.var { color: #ffff00; font-style: italic; font-family: ‘Cambria Math’, serif; }
+.key.op { color: #ff8888; }
+.key.action { background: #333; color: #aaa; }
+.key.submit { background: #004488; color: #ffff00; font-size: 15px; }
+.key.submit:active { background: #0066cc; }
+.key.clear { background: #440000; color: #ff8888; font-size: 15px; }
+.key.clear:active { background: #880000; }
 
-  /* --- 画面フラッシュ --- */
-  #flash {
-    position: absolute;
-    inset: 0;
-    background: #fff;
-    opacity: 0;
-    pointer-events: none;
-    z-index: 50;
-  }
-  #flash.on { animation: flash 0.2s; }
-  @keyframes flash {
-    0% { opacity: 0; }
-    50% { opacity: 0.8; }
-    100% { opacity: 0; }
-  }
+/* — メッセージウィンドウ（下部） — */
+#message {
+min-height: 50px;
+font-size: 13px;
+line-height: 1.6;
+letter-spacing: 1px;
+white-space: pre-wrap;
+flex-shrink: 0;
+}
+#message .arrow {
+position: absolute;
+bottom: 8px;
+right: 12px;
+color: #fff;
+animation: blink 0.8s steps(2) infinite;
+font-size: 14px;
+}
 
-  /* --- レベルアップ演出 --- */
-  .level-up {
-    position: absolute;
-    top: 40%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 32px;
-    color: #ffff00;
-    text-shadow: 3px 3px 0 #884400, 0 0 16px #ffff00;
-    letter-spacing: 4px;
-    z-index: 20;
-    animation: lvUp 1.8s forwards;
-    pointer-events: none;
-  }
-  @keyframes lvUp {
-    0% { opacity: 0; transform: translate(-50%, -30%) scale(0.5); }
-    20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
-    80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-    100% { opacity: 0; transform: translate(-50%, -80%) scale(1); }
-  }
+/* — オーバーレイ画面（タイトル・エンディング等） — */
+.overlay {
+position: absolute;
+inset: 0;
+background: #000;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+padding: 24px;
+z-index: 100;
+text-align: center;
+}
+.overlay.hidden { display: none; }
+.overlay h1 {
+font-size: 28px;
+color: #ffff00;
+letter-spacing: 3px;
+margin-bottom: 20px;
+text-shadow: 3px 3px 0 #884400;
+line-height: 1.4;
+}
+.overlay h2 {
+font-size: 20px;
+color: #fff;
+margin-bottom: 16px;
+letter-spacing: 2px;
+}
+.overlay p {
+font-size: 14px;
+color: #fff;
+line-height: 2;
+margin-bottom: 16px;
+letter-spacing: 1px;
+}
+.overlay .sub { color: #aaa; font-size: 12px; }
+.overlay .start-btn {
+background: #000;
+border: 3px solid #fff;
+box-shadow: 0 0 0 3px #000, 0 0 0 5px #fff;
+color: #ffff00;
+padding: 14px 28px;
+font-size: 16px;
+letter-spacing: 3px;
+cursor: pointer;
+margin-top: 20px;
+font-family: inherit;
+}
+.overlay .start-btn:active { background: #fff; color: #000; }
+.overlay .hero {
+font-size: 64px;
+margin-bottom: 12px;
+}
 
-  /* --- エンディング --- */
-  .ending-scroll {
-    max-width: 90%;
-    line-height: 2.2;
-  }
+/* — ダメージエフェクト — */
+.dmg-float {
+position: absolute;
+font-size: 28px;
+font-weight: bold;
+color: #ff4444;
+text-shadow: 2px 2px 0 #000, 0 0 8px #ff0000;
+pointer-events: none;
+animation: dmgFloat 1s forwards;
+z-index: 10;
+}
+@keyframes dmgFloat {
+0% { opacity: 1; transform: translateY(0) scale(0.6); }
+30% { transform: translateY(-20px) scale(1.2); }
+100% { opacity: 0; transform: translateY(-60px) scale(1); }
+}
 
-  /* 画面狭い時 */
-  @media (max-height: 700px) {
-    .key { font-size: 16px; padding: 8px 0; min-height: 38px; }
-    #status { font-size: 12px; padding: 6px 10px; }
-    #problemBox { font-size: 14px; padding: 10px; min-height: 60px; }
-    #problemBox .expr { font-size: 17px; }
-    #monster { font-size: 68px; }
-    #monster.boss { font-size: 90px; }
-  }
+/* — 画面フラッシュ — */
+#flash {
+position: absolute;
+inset: 0;
+background: #fff;
+opacity: 0;
+pointer-events: none;
+z-index: 50;
+}
+#flash.on { animation: flash 0.2s; }
+@keyframes flash {
+0% { opacity: 0; }
+50% { opacity: 0.8; }
+100% { opacity: 0; }
+}
+
+/* — レベルアップ演出 — */
+.level-up {
+position: absolute;
+top: 40%;
+left: 50%;
+transform: translate(-50%, -50%);
+font-size: 32px;
+color: #ffff00;
+text-shadow: 3px 3px 0 #884400, 0 0 16px #ffff00;
+letter-spacing: 4px;
+z-index: 20;
+animation: lvUp 1.8s forwards;
+pointer-events: none;
+}
+@keyframes lvUp {
+0% { opacity: 0; transform: translate(-50%, -30%) scale(0.5); }
+20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+100% { opacity: 0; transform: translate(-50%, -80%) scale(1); }
+}
+
+/* — エンディング — */
+.ending-scroll {
+max-width: 90%;
+line-height: 2.2;
+}
+
+/* 画面狭い時 */
+@media (max-height: 700px) {
+.key { font-size: 16px; padding: 8px 0; min-height: 38px; }
+#status { font-size: 12px; padding: 6px 10px; }
+#problemBox { font-size: 14px; padding: 10px; min-height: 60px; }
+#problemBox .expr { font-size: 17px; }
+#monster { font-size: 68px; }
+#monster.boss { font-size: 90px; }
+}
 </style>
+
 </head>
 <body>
 <div id="game">
 
   <!-- タイトル画面 -->
+
   <div class="overlay" id="titleScreen">
     <div class="hero">🗡️</div>
     <h1>因数分解<br>クエスト</h1>
@@ -371,6 +381,7 @@
   </div>
 
   <!-- エンディング画面 -->
+
   <div class="overlay hidden" id="endingScreen">
     <div class="hero">👑</div>
     <h1>GAME CLEAR!</h1>
@@ -383,6 +394,7 @@
   </div>
 
   <!-- ゲームオーバー画面 -->
+
   <div class="overlay hidden" id="gameOverScreen">
     <div class="hero">💀</div>
     <h1 style="color:#ff4444;text-shadow:3px 3px 0 #440000;">ぜんめつ…</h1>
@@ -392,6 +404,7 @@
   </div>
 
   <!-- ステータス -->
+
   <div class="dq-window" id="status">
     <div class="row"><span class="label">ゆうしゃ</span><span class="value" id="levelDisplay">LV 1</span></div>
     <div class="row"><span class="label">ライフ</span><span class="value hearts" id="livesDisplay">♥♥</span></div>
@@ -400,6 +413,7 @@
   </div>
 
   <!-- バトル場 -->
+
   <div id="field">
     <div id="monsterName">スライム</div>
     <div id="monster">🟢</div>
@@ -407,18 +421,22 @@
   </div>
 
   <!-- 問題 -->
+
   <div class="dq-window" id="problemBox">
     <div class="label">▼ いんすうぶんかい せよ</div>
     <div class="expr" id="problemExpr">x³ + 3x² + 3x + 1</div>
   </div>
 
   <!-- 入力欄 -->
+
   <div class="dq-window" id="inputBox" class="empty"></div>
 
   <!-- キーパッド -->
+
   <div id="keypad"></div>
 
   <!-- メッセージ -->
+
   <div class="dq-window" id="message" style="position:relative;">
     モンスターが　あらわれた！
     <span class="arrow" id="msgArrow" style="display:none;">▼</span>
@@ -1165,5 +1183,6 @@ renderStatus();
 renderEnemy();
 // タイトル画面を表示状態にしておく（最初から）
 </script>
+
 </body>
 </html>
